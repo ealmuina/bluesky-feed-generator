@@ -8,7 +8,10 @@ CURSOR_EOF = "eof"
 
 def handler(language_code: str, cursor: Optional[str], limit: int) -> dict:
     language = Language.get(Language.code == language_code)
-    posts = language.posts.order_by(
+
+    posts = language.posts.where(
+        Post.reply_root.is_null(True)
+    ).order_by(
         Post.indexed_at.desc()
     ).order_by(
         Post.cid.desc()
