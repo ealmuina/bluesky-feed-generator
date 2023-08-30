@@ -20,7 +20,7 @@ def operations_callback(ops: dict) -> None:
             reply_root = record.reply.root.uri
 
         # Bluesky user-tagged languages
-        post_languages = created_post['record'].get('langs') or set()
+        post_languages = created_post['record'].langs or []
         languages = {
             Language.get_or_create(code=lang)[0]
             for lang in post_languages
