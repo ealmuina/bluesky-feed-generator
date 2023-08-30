@@ -19,19 +19,20 @@ def operations_callback(ops: dict) -> None:
             reply_root = record.reply.root.uri
 
         # Bluesky user-tagged languages
-        post_languages = created_post['record'].langs or []
+        languages = created_post['record'].langs or []
 
         # Automatically detected languages
         inlined_text = record.text.replace('\n', ' ')
         confidence_values = detector.compute_language_confidence_values(inlined_text)
         language, confidence = confidence_values[0]
-        iso_code = language.iso_code_639_1.name.lower()
 
-        languages = set(post_languages)
-        if confidence > 0.8 or confidence > 0.5 and iso_code in post_languages:
-            languages = {
-                Language.get_or_create(code=language.iso_code_639_1.name.lower())[0]
-            }
+        if confidence > 0.8:
+            languages = [language.iso_code_639_1.name.lower()]
+
+        languages = {
+            Language.get_or_create(code=lang)[0]
+            for lang in languages
+        }
 
         post_dict = {
             'uri': created_post['uri'],
