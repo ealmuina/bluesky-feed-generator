@@ -1,5 +1,5 @@
-from . import whats_alf
+from .languages import spanish
 
 algos = {
-    whats_alf.uri: whats_alf.handler
+    spanish.uri: spanish.handler
 }

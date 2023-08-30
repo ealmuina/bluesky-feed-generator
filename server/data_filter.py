@@ -1,42 +1,47 @@
-from atproto import models
+import lingua
 
 from server.logger import logger
-from server.database import db, Post
+from server.database import db, Post, Language
+
+detector = lingua.LanguageDetectorBuilder.from_all_languages().with_preloaded_language_models().build()
 
 
 def operations_callback(ops: dict) -> None:
-    # Here we can filter, process, run ML classification, etc.
-    # After our feed alg we can save posts into our DB
-    # Also, we should process deleted posts to remove them from our DB and keep it in sync
-
-    # for example, let's create our custom feed that will contain all posts that contains alf related text
-
     posts_to_create = []
     for created_post in ops['posts']['created']:
         record = created_post['record']
 
-        # print all texts just as demo that data stream works
-        post_with_images = isinstance(record.embed, models.AppBskyEmbedImages.Main)
+        reply_parent = None
+        if record.reply and record.reply.parent.uri:
+            reply_parent = record.reply.parent.uri
+
+        reply_root = None
+        if record.reply and record.reply.root.uri:
+            reply_root = record.reply.root.uri
+
+        # Bluesky user-tagged languages
+        languages = {
+            Language.get_or_create(code=lang)[0]
+            for lang in created_post['record']['langs']
+        }
+
+        # Add automatically detected language if accuracy is high enough
         inlined_text = record.text.replace('\n', ' ')
-        logger.info(f'New post (with images: {post_with_images}): {inlined_text}')
+        confidence_values = detector.compute_language_confidence_values(inlined_text)
+        language, confidence = confidence_values[0]
+        if confidence > 0.8:
+            languages.add(
+                Language.get_or_create(code=language.iso_code_639_1.name.lower())[0]
+            )
 
-        # only alf-related posts
-        if 'alf' in record.text.lower():
-            reply_parent = None
-            if record.reply and record.reply.parent.uri:
-                reply_parent = record.reply.parent.uri
-
-            reply_root = None
-            if record.reply and record.reply.root.uri:
-                reply_root = record.reply.root.uri
-
-            post_dict = {
-                'uri': created_post['uri'],
-                'cid': created_post['cid'],
-                'reply_parent': reply_parent,
-                'reply_root': reply_root,
-            }
-            posts_to_create.append(post_dict)
+        post_dict = {
+            'uri': created_post['uri'],
+            'cid': created_post['cid'],
+            'reply_parent': reply_parent,
+            'reply_root': reply_root,
+            'languages': languages
+        }
+        posts_to_create.append(post_dict)
 
     posts_to_delete = [p['uri'] for p in ops['posts']['deleted']]
     if posts_to_delete:
@@ -46,5 +51,7 @@ def operations_callback(ops: dict) -> None:
     if posts_to_create:
         with db.atomic():
             for post_dict in posts_to_create:
-                Post.create(**post_dict)
+                languages = post_dict.pop("languages")
+                post = Post.create(**post_dict)
+                post.languages.add(list(languages))
         logger.info(f'Added to feed: {len(posts_to_create)}')

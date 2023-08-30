@@ -1,15 +1,18 @@
 from datetime import datetime
 from typing import Optional
 
-from server import config
-from server.database import Post
+from server.database import Post, Language
 
-uri = config.WHATS_ALF_URI
-CURSOR_EOF = 'eof'
+CURSOR_EOF = "eof"
 
 
-def handler(cursor: Optional[str], limit: int) -> dict:
-    posts = Post.select().order_by(Post.cid.desc()).order_by(Post.indexed_at.desc()).limit(limit)
+def handler(language_code: str, cursor: Optional[str], limit: int) -> dict:
+    language = Language.select().where(code=language_code)
+    posts = language.posts.order_by(
+        Post.indexed_at.desc()
+    ).order_by(
+        Post.cid.desc()
+    ).limit(limit)
 
     if cursor:
         if cursor == CURSOR_EOF:
