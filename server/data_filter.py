@@ -1,9 +1,8 @@
 import lingua
 
-from server.logger import logger
 from server.database import db, Post, Language
 
-detector = lingua.LanguageDetectorBuilder.from_all_languages().with_preloaded_language_models().build()
+detector = lingua.LanguageDetectorBuilder.from_all_languages().with_low_accuracy_mode().build()
 
 
 def operations_callback(ops: dict) -> None:
@@ -46,7 +45,6 @@ def operations_callback(ops: dict) -> None:
     posts_to_delete = [p['uri'] for p in ops['posts']['deleted']]
     if posts_to_delete:
         Post.delete().where(Post.uri.in_(posts_to_delete))
-        logger.info(f'Deleted from feed: {len(posts_to_delete)}')
 
     if posts_to_create:
         with db.atomic():
@@ -54,4 +52,3 @@ def operations_callback(ops: dict) -> None:
                 languages = post_dict.pop("languages")
                 post = Post.create(**post_dict)
                 post.languages.add(list(languages))
-        logger.info(f'Added to feed: {len(posts_to_create)}')
