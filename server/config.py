@@ -9,8 +9,6 @@ if HOSTNAME is None:
 if SERVICE_DID is None:
     SERVICE_DID = f'did:web:{HOSTNAME}'
 
-
 SPANISH_URI = os.environ.get('SPANISH_URI')
-if SPANISH_URI is None:
-    raise RuntimeError('Publish your feed first (run publish_feed.py) to obtain Feed URI. '
-                       'Set this URI to "SPANISH_URI" environment variable.')
+CATALAN_URI = os.environ.get('CATALAN_URI')
+PORTUGUESE_URI = os.environ.get('PORTUGUESE_URI')
