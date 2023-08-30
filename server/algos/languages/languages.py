@@ -12,9 +12,8 @@ def handler(language_code: str, cursor: Optional[str], limit: int) -> dict:
     posts = language.posts.where(
         Post.reply_root.is_null(True)
     ).order_by(
-        Post.indexed_at.desc()
-    ).order_by(
-        Post.cid.desc()
+        Post.indexed_at.desc(),
+        Post.cid.desc(),
     ).limit(limit)
 
     if cursor:
