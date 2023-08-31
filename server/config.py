@@ -12,3 +12,4 @@ if SERVICE_DID is None:
 SPANISH_URI = os.environ.get('SPANISH_URI')
 CATALAN_URI = os.environ.get('CATALAN_URI')
 PORTUGUESE_URI = os.environ.get('PORTUGUESE_URI')
+GALICIAN_URI = os.environ.get('GALICIAN_URI')
