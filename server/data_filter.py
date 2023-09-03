@@ -1,8 +1,8 @@
-import lingua
+import gcld3
 
 from server.database import db, Post, Language
 
-detector = lingua.LanguageDetectorBuilder.from_all_languages().with_low_accuracy_mode().build()
+detector = gcld3.NNetLanguageIdentifier(min_num_bytes=0, max_num_bytes=1000)
 
 
 def operations_callback(ops: dict) -> None:
@@ -23,11 +23,13 @@ def operations_callback(ops: dict) -> None:
 
         # Automatically detected languages
         inlined_text = record.text.replace('\n', ' ')
-        confidence_values = detector.compute_language_confidence_values(inlined_text)
-        language, confidence = confidence_values[0]
+        detection_result = detector.FindLanguage(text=inlined_text)
 
-        if confidence > 0.8:
-            languages = [language.iso_code_639_1.name.lower()]
+        if not inlined_text.strip():
+            languages = []
+
+        if detection_result.is_reliable:
+            languages = [detection_result.language]
 
         languages = {
             Language.get_or_create(code=lang)[0]

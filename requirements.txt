@@ -3,3 +3,4 @@ peewee~=3.16.2
 Flask~=2.3.2
 python-dotenv~=1.0.0
 lingua-language-detector==1.3.2
+gcld3==3.0.13
