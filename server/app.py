@@ -2,8 +2,7 @@ import sys
 import signal
 import threading
 
-from server import config
-from server import data_stream
+from server import config, cleaner, data_stream
 
 from flask import Flask, jsonify, request
 
@@ -12,16 +11,22 @@ from server.data_filter import operations_callback
 
 app = Flask(__name__)
 
-stream_stop_event = threading.Event()
-stream_thread = threading.Thread(
-    target=data_stream.run, args=(config.SERVICE_DID, operations_callback, stream_stop_event,)
-)
-stream_thread.start()
+stop_event = threading.Event()
+
+# Stream thread
+threading.Thread(
+    target=data_stream.run, args=(config.SERVICE_DID, operations_callback, stop_event,)
+).start()
+
+# Cleaner thread
+threading.Thread(
+    target=cleaner.run, args=(stop_event,)
+).start()
 
 
 def sigint_handler(*_):
-    print('Stopping data stream...')
-    stream_stop_event.set()
+    print('Stopping sub-threads...')
+    stop_event.set()
     sys.exit(0)
 
 
