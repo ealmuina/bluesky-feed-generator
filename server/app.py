@@ -19,9 +19,9 @@ threading.Thread(
 ).start()
 
 # Cleaner thread
-# threading.Thread(
-#     target=cleaner.run, args=(stop_event,)
-# ).start()
+threading.Thread(
+    target=cleaner.run, args=(stop_event,)
+).start()
 
 
 def sigint_handler(*_):
