@@ -62,14 +62,12 @@ def run(name, operations_callback, stream_stop_event=None):
     while stream_stop_event is None or not stream_stop_event.is_set():
         try:
             _run(name, operations_callback, stream_stop_event)
-        except FirehoseError as e:
-            if e.args:
-                xrpc_error = e.args[0]
-                if isinstance(xrpc_error, XrpcError) and xrpc_error.error == 'ConsumerTooSlow':
-                    logger.warn('Reconnecting to Firehose due to ConsumerTooSlow...')
-                    continue
-
-            raise e
+        except Exception as e:
+            #if e.args:
+            #    xrpc_error = e.args[0]
+            #    if isinstance(xrpc_error, XrpcError) and xrpc_error.error == 'ConsumerTooSlow':
+            #        logger.warn('Reconnecting to Firehose due to ConsumerTooSlow...')
+            continue
 
 
 def _run(name, operations_callback, stream_stop_event=None):
