@@ -54,4 +54,5 @@ def operations_callback(ops: dict) -> None:
             for post_dict in posts_to_create:
                 languages = post_dict.pop("languages")
                 post = Post.create(**post_dict)
+                post.languages.clear()
                 post.languages.add(list(languages))
