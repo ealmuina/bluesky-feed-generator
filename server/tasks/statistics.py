@@ -1,12 +1,10 @@
 import datetime
 import logging
 import os
-import time
 from threading import Thread
 
 from redis import Redis
 from atproto_client.client.client import Client
-from atproto_client.exceptions import BadRequestError
 
 from server.database import User
 
@@ -31,6 +29,7 @@ class StatisticsUpdater(Thread):
         while stop_event is None or not stop_event.is_set():
             _, user_did = self.redis.brpop(QUEUE_NAME)
             user_did = user_did.decode()
+
             try:
                 profile = self.client.get_profile(user_did)
 
@@ -44,3 +43,5 @@ class StatisticsUpdater(Thread):
                 user.save()
             except Exception:
                 logger.exception(f"Error updating statistics for DID: {user_did}", exc_info=True)
+
+            logger.info(f"{self.redis.llen(QUEUE_NAME)} users pending for update")
