@@ -1,23 +1,12 @@
 from datetime import datetime
 from typing import Optional
 
-from server import config
-from server.database import Post, Language
+from server.database import Post
 
 CURSOR_EOF = "eof"
-uri = config.SPANISH_URI
 
 
-def handler(cursor: Optional[str], limit: int) -> dict:
-    language = Language.get(Language.code == "es")
-
-    posts = language.posts.where(
-        Post.reply_root.is_null(True)
-    ).order_by(
-        Post.indexed_at.desc(),
-        Post.cid.desc(),
-    ).limit(limit)
-
+def handler(cursor: Optional[str], posts) -> dict:
     if cursor:
         if cursor == CURSOR_EOF:
             return {
@@ -46,9 +35,3 @@ def handler(cursor: Optional[str], limit: int) -> dict:
         'cursor': cursor,
         'feed': feed
     }
-
-    return algo_languages.handler(
-        language_code="es",
-        cursor=cursor,
-        limit=limit,
-    )
