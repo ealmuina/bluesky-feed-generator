@@ -11,7 +11,7 @@ def handler(cursor: Optional[str], limit: int) -> dict:
     language = Language.get(Language.code == "es")
 
     posts = language.posts.join(
-        User
+        User, on=(Post.author == User.id)
     ).where(
         Post.reply_root.is_null(True),
         User.followers_count > 1000,
