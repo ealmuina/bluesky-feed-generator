@@ -2,6 +2,7 @@
 # YOU MUST INSTALL ATPROTO SDK
 # pip3 install atproto
 
+import os
 from atproto import Client, models
 
 # YOUR bluesky handle
@@ -10,11 +11,11 @@ HANDLE: str = 'ealmuina.xyz'
 
 # YOUR bluesky password, or preferably an App Password (found in your client settings)
 # Ex: abcd-1234-efgh-5678
-PASSWORD: str = 'yy2p-v52m-s6rn-3bp5'
+PASSWORD: str = os.environ.get("USER_PASSWORD")
 
 # The hostname of the server where feed server will be hosted
 # Ex: feed.bsky.dev
-HOSTNAME: str = 'bsky.ealmuina.xyz'
+HOSTNAME: str = 'feed.bsky.ealmuina.xyz'
 
 # A short name for the record that will show in urls
 # Lowercase with no spaces.
@@ -31,7 +32,7 @@ DESCRIPTION: str = 'Publicacións de Bluesky en galego // Bluesky posts in Galic
 
 # (Optional) The path to an image to be used as your feed's avatar
 # Ex: ./path/to/avatar.jpeg
-AVATAR_PATH: str = './1920px-Flag_of_Galicia.svg.png'
+AVATAR_PATH: str = './icons/galician.jpg'
 
 # (Optional). Only use this if you want a service did different from did:web
 SERVICE_DID: str = ''

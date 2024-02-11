@@ -1,6 +1,6 @@
 import gcld3
 
-from server.database import db, Post, Language
+from server.database import db, Post, Language, User
 
 detector = gcld3.NNetLanguageIdentifier(min_num_bytes=0, max_num_bytes=1000)
 
@@ -17,6 +17,11 @@ def operations_callback(ops: dict) -> None:
         reply_root = None
         if record.reply and record.reply.root.uri:
             reply_root = record.reply.root.uri
+
+        # Get or create author
+        author, _ = User.get_or_create(
+            did=created_post["author"]
+        )
 
         # Bluesky user-tagged languages
         languages = created_post['record'].langs or []
@@ -37,6 +42,7 @@ def operations_callback(ops: dict) -> None:
         }
 
         post_dict = {
+            'author': author,
             'uri': created_post['uri'],
             'cid': created_post['cid'],
             'reply_parent': reply_parent,

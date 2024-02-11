@@ -2,7 +2,13 @@ from datetime import datetime
 
 import peewee
 
-db = peewee.SqliteDatabase('feed_database.db')
+db = peewee.PostgresqlDatabase(
+    "bsky_feeds",
+    user="postgres",
+    password="postgres",
+    host="db",
+    port=5432
+)
 db_version = 2
 
 
@@ -11,15 +17,29 @@ class BaseModel(peewee.Model):
         database = db
 
 
+class User(BaseModel):
+    did = peewee.CharField(index=True)
+    handle = peewee.CharField(null=True)
+    followers_count = peewee.IntegerField(null=True)
+    follows_count = peewee.IntegerField(null=True)
+    posts_count = peewee.IntegerField(null=True)
+
+    indexed_at = peewee.DateTimeField(default=datetime.utcnow)
+    last_update = peewee.DateTimeField(null=True)
+
+
 class Language(BaseModel):
     code = peewee.CharField(unique=True)
 
 
 class Post(BaseModel):
+    author = peewee.ForeignKeyField(User, related_name='posts', null=True)
+
     uri = peewee.CharField(index=True)
     cid = peewee.CharField()
     reply_parent = peewee.CharField(null=True, default=None)
     reply_root = peewee.CharField(null=True, default=None)
+
     indexed_at = peewee.DateTimeField(default=datetime.utcnow)
     languages = peewee.ManyToManyField(Language, backref='posts')
 
@@ -38,7 +58,7 @@ class DbMetadata(BaseModel):
 
 if db.is_closed():
     db.connect()
-    db.create_tables([Language, Post, PostLanguage, SubscriptionState, DbMetadata])
+    db.create_tables([User, Language, Post, PostLanguage, SubscriptionState, DbMetadata])
 
     # DB migration
     current_version = 1

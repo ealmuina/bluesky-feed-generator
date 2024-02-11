@@ -2,7 +2,8 @@ import sys
 import signal
 import threading
 
-from server import config, cleaner, data_stream
+from server import config, data_stream
+from server.tasks import cleaner, statistics
 
 from flask import Flask, jsonify, request
 
@@ -21,6 +22,11 @@ threading.Thread(
 # Cleaner thread
 threading.Thread(
     target=cleaner.run, args=(stop_event,)
+).start()
+
+# Statistics update thread
+threading.Thread(
+    target=statistics.run, args=(stop_event,)
 ).start()
 
 

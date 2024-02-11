@@ -7,3 +7,14 @@ services:
     volumes:
       - .:/app
     command: flask run
+    depends_on:
+      - db
+  db:
+    image: postgres:latest
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./init_scripts:/docker-entrypoint-initdb.d
