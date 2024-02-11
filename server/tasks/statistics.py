@@ -31,16 +31,20 @@ class StatisticsUpdater(Thread):
             user_did = user_did.decode()
 
             try:
-                profile = self.client.get_profile(user_did)
-
+                now = datetime.datetime.now()
                 user = User.get(did=user_did)
-                user.handle = profile.handle
-                user.followers_count = profile.followers_count
-                user.follows_count = profile.follows_count
-                user.posts_count = profile.posts_count
-                user.last_update = datetime.datetime.now()
 
-                user.save()
+                if user.last_update is None or user.last_update < now - datetime.timedelta(days=1):
+                    profile = self.client.get_profile(user_did)
+
+                    user.handle = profile.handle
+                    user.followers_count = profile.followers_count
+                    user.follows_count = profile.follows_count
+                    user.posts_count = profile.posts_count
+                    user.last_update = now
+
+                    user.save()
+
             except Exception:
                 logger.exception(f"Error updating statistics for DID: {user_did}", exc_info=True)
 
