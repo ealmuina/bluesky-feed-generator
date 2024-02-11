@@ -9,6 +9,7 @@ services:
     command: flask run
     depends_on:
       - db
+      - redis
   db:
     image: postgres:latest
     environment:
@@ -18,3 +19,5 @@ services:
       - "5432:5432"
     volumes:
       - ./init_scripts:/docker-entrypoint-initdb.d
+  redis:
+    image: redis:latest

@@ -1,8 +1,11 @@
 import gcld3
+from redis import Redis
 
 from server.database import db, Post, Language, User
+from server.tasks import statistics
 
 detector = gcld3.NNetLanguageIdentifier(min_num_bytes=0, max_num_bytes=1000)
+redis = Redis(host="redis")
 
 
 def operations_callback(ops: dict) -> None:
@@ -19,9 +22,11 @@ def operations_callback(ops: dict) -> None:
             reply_root = record.reply.root.uri
 
         # Get or create author
+        author_did = created_post["author"]
         author, _ = User.get_or_create(
-            did=created_post["author"]
+            did=author_did
         )
+        redis.lpush(statistics.QUEUE_NAME, author_did)
 
         # Bluesky user-tagged languages
         languages = created_post['record'].langs or []

@@ -25,8 +25,9 @@ threading.Thread(
 ).start()
 
 # Statistics update thread
+statistics_updater = statistics.StatisticsUpdater()
 threading.Thread(
-    target=statistics.run, args=(stop_event,)
+    target=statistics_updater.run, args=(stop_event,)
 ).start()
 
 
