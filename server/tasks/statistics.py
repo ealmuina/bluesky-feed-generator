@@ -45,5 +45,5 @@ def run(stop_event=None):
             user.save()
             logger.info(f"[{i + 1}/{users_count}] Updated data for user '{user.did}'")
 
-        time.sleep(86400)  # 1 hour
+        time.sleep(3600)  # 1 hour
         continue
