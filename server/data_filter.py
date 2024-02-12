@@ -1,10 +1,9 @@
-import gcld3
+from ftlangdetect import detect
 from redis import Redis
 
 from server.database import db, Post, Language, User
 from server.tasks import statistics
 
-detector = gcld3.NNetLanguageIdentifier(min_num_bytes=0, max_num_bytes=1000)
 redis = Redis(host="redis")
 
 
@@ -31,15 +30,14 @@ def operations_callback(ops: dict) -> None:
         # Bluesky user-tagged languages
         languages = created_post['record'].langs or []
 
-        # Automatically detected languages
+        # Detect language
         inlined_text = record.text.replace('\n', '. ')
-        detection_result = detector.FindLanguage(text=inlined_text)
-
-        if (not languages and detection_result.is_reliable) or detection_result.probability > 0.9:
-            languages = [detection_result.language]
-
         if not inlined_text.strip():
             languages = []
+        else:
+            prediction = detect(text=inlined_text, low_memory=False)
+            if not languages or prediction["score"] > 0.7:
+                languages = [prediction["lang"]]
 
         languages = {
             Language.get_or_create(code=lang)[0]
