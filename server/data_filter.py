@@ -1,4 +1,4 @@
-from ftlangdetect import detect
+from ftlangdetect.detect import get_or_load_model
 from redis import Redis
 
 from server.database import db, Post, Language, User
@@ -6,6 +6,26 @@ from server.tasks import statistics
 from server.utils import remove_emoji
 
 redis = Redis(host="redis")
+
+
+def detect_language(text, user_languages):
+    if not text:
+        return user_languages
+
+    model = get_or_load_model(low_memory=False)
+    labels, scores = model.predict(text, k=5)
+    language_prob = {
+        lang.replace("__label__", ''): score
+        for lang, score in zip(labels, scores)
+    }
+
+    text_languages = []
+    for language in user_languages:
+        prob = language_prob.get(language, 0)
+        if prob > 0.1:
+            text_languages.append(language)
+
+    return text_languages or [labels[0].replace("__label__", '')]
 
 
 def operations_callback(ops: dict) -> None:
@@ -34,10 +54,7 @@ def operations_callback(ops: dict) -> None:
         # Detect language
         inlined_text = record.text.replace('\n', '. ').strip()
         inlined_text = remove_emoji(inlined_text)
-        if inlined_text:
-            prediction = detect(text=inlined_text, low_memory=False)
-            if not languages or prediction["score"] > 0.4:
-                languages = [prediction["lang"]]
+        languages = detect_language(inlined_text, languages)
 
         languages = {
             Language.get_or_create(code=lang)[0]
