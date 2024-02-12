@@ -36,7 +36,7 @@ def operations_callback(ops: dict) -> None:
             languages = []
         else:
             prediction = detect(text=inlined_text, low_memory=False)
-            if not languages or prediction["score"] > 0.7:
+            if not languages or prediction["score"] > 0.5:
                 languages = [prediction["lang"]]
 
         languages = {
