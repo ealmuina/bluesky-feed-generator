@@ -1,49 +1,51 @@
 import datetime
 import logging
 import os
-import time
+from threading import Thread
 
+from redis import Redis
 from atproto_client.client.client import Client
-from atproto_client.exceptions import BadRequestError
 
 from server.database import User
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
+QUEUE_NAME = "bsky-statistics"
 
-def run(stop_event=None):
-    while stop_event is None or not stop_event.is_set():
-        client = Client()
-        client.login(
+
+class StatisticsUpdater(Thread):
+    def __init__(self):
+        super().__init__()
+
+        self.client = Client()
+        self.client.login(
             os.environ.get("STATISTICS_USER"),
             os.environ.get("STATISTICS_PASSWORD")
         )
+        self.redis = Redis(host="redis")
 
-        now = datetime.datetime.now()
-        users = User.select().where(
-            User.last_update.is_null(True)
-            | (User.last_update <= now - datetime.timedelta(days=1))
-        )
-        users_count = users.count()
+    def run(self, stop_event=None):
+        while stop_event is None or not stop_event.is_set():
+            _, user_did = self.redis.brpop(QUEUE_NAME)
+            user_did = user_did.decode()
 
-        for i, user in enumerate(users):
             try:
-                profile = client.get_profile(user.did)
-            except BadRequestError:
-                # User account deleted
-                user.delete()
-                logger.info(f"[{i + 1}/{users_count}] Deleted user '{user.did}'")
-                continue
+                now = datetime.datetime.now()
+                user = User.get(did=user_did)
 
-            user.handle = profile.handle
-            user.followers_count = profile.followers_count
-            user.follows_count = profile.follows_count
-            user.posts_count = profile.posts_count
-            user.last_update = now
+                if user.last_update is None or user.last_update < now - datetime.timedelta(days=1):
+                    profile = self.client.get_profile(user_did)
 
-            user.save()
-            logger.info(f"[{i + 1}/{users_count}] Updated data for user '{user.did}'")
+                    user.handle = profile.handle
+                    user.followers_count = profile.followers_count
+                    user.follows_count = profile.follows_count
+                    user.posts_count = profile.posts_count
+                    user.last_update = now
 
-        time.sleep(3600)  # 1 hour
-        continue
+                    user.save()
+
+            except Exception:
+                logger.exception(f"Error updating statistics for DID: {user_did}", exc_info=True)
+
+            logger.info(f"{self.redis.llen(QUEUE_NAME)} users pending for update")
