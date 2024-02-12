@@ -3,6 +3,7 @@ from redis import Redis
 
 from server.database import db, Post, Language, User
 from server.tasks import statistics
+from server.utils import remove_emoji
 
 redis = Redis(host="redis")
 
@@ -31,12 +32,11 @@ def operations_callback(ops: dict) -> None:
         languages = created_post['record'].langs or []
 
         # Detect language
-        inlined_text = record.text.replace('\n', '. ')
-        if not inlined_text.strip():
-            languages = []
-        else:
+        inlined_text = record.text.replace('\n', '. ').strip()
+        inlined_text = remove_emoji(inlined_text)
+        if inlined_text:
             prediction = detect(text=inlined_text, low_memory=False)
-            if not languages or prediction["score"] > 0.5:
+            if not languages or prediction["score"] > 0.4:
                 languages = [prediction["lang"]]
 
         languages = {
