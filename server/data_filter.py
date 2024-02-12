@@ -32,14 +32,14 @@ def operations_callback(ops: dict) -> None:
         languages = created_post['record'].langs or []
 
         # Automatically detected languages
-        # inlined_text = record.text.replace('\n', ' ')
-        # detection_result = detector.FindLanguage(text=inlined_text)
-        #
-        # if not inlined_text.strip():
-        #     languages = []
-        #
-        # if detection_result.is_reliable:
-        #     languages = [detection_result.language]
+        inlined_text = record.text.replace('\n', ' ')
+        detection_result = detector.FindLanguage(text=inlined_text)
+
+        if not inlined_text.strip():
+            languages = []
+
+        if detection_result.is_reliable:
+            languages = [detection_result.language]
 
         languages = {
             Language.get_or_create(code=lang)[0]
