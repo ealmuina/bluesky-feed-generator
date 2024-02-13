@@ -24,3 +24,15 @@ def remove_emoji(text):
                                u"\U0001f900-\U0001f9ff"
                                "]+", flags=re.UNICODE)
     return emoji_pattern.sub(r"", text)
+
+
+def remove_links(text):
+    url_pattern = r"\S+\.\S+"
+    cleaned_text = []
+
+    for word in text.split():
+        if re.match(url_pattern, word) or word.startswith("@"):
+            continue
+        cleaned_text.append(word)
+
+    return " ".join(cleaned_text)

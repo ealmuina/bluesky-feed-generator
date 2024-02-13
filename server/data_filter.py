@@ -3,7 +3,7 @@ from redis import Redis
 
 from server.database import db, Post, Language, User
 from server.tasks import statistics
-from server.utils import remove_emoji
+from server.utils import remove_emoji, remove_links
 
 redis = Redis(host="redis")
 
@@ -54,6 +54,7 @@ def operations_callback(ops: dict) -> None:
         # Detect language
         inlined_text = record.text.replace('\n', '. ').strip()
         inlined_text = remove_emoji(inlined_text)
+        inlined_text = remove_links(inlined_text)
         languages = detect_language(inlined_text, languages)
 
         languages = {
