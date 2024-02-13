@@ -20,11 +20,11 @@ def detect_language(text, user_languages):
     }
 
     # Confirm user tag
-    # if its confidence is higher than 0.1
+    # if its confidence is higher than 0.15
     text_languages = []
     for language in user_languages:
         prob = language_prob.get(language, 0)
-        if prob > 0.1:
+        if prob > 0.15:
             text_languages.append(language)
     if text_languages:
         return text_languages
