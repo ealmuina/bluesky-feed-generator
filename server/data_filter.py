@@ -22,7 +22,7 @@ def detect_language(text, user_languages):
     text_languages = []
     for language in user_languages:
         prob = language_prob.get(language, 0)
-        if prob > 0.1:
+        if prob > 0.05:
             text_languages.append(language)
 
     return text_languages or [labels[0].replace("__label__", '')]
