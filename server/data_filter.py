@@ -19,13 +19,25 @@ def detect_language(text, user_languages):
         for lang, score in zip(labels, scores)
     }
 
+    # Confirm user tag
+    # if its confidence is higher than 0.1
     text_languages = []
     for language in user_languages:
         prob = language_prob.get(language, 0)
-        if prob > 0.05:
+        if prob > 0.1:
             text_languages.append(language)
+    if text_languages:
+        return text_languages
 
-    return text_languages or [labels[0].replace("__label__", '')]
+    # Set model-detected language
+    # if its confidence is higher than 0.7
+    best_match = labels[0].replace("__label__", '')
+    best_score = scores[0]
+    if best_score > 0.7:
+        return best_match
+
+    # Language uncertain
+    return []
 
 
 def operations_callback(ops: dict) -> None:
