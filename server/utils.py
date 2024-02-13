@@ -31,7 +31,11 @@ def remove_links(text):
     cleaned_text = []
 
     for word in text.split():
-        if re.match(url_pattern, word) or word.startswith("@"):
+        if (
+                re.match(url_pattern, word)
+                or word.startswith("@")
+                or word.startswith("#")
+        ):
             continue
         cleaned_text.append(word)
 
