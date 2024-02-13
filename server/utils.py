@@ -27,16 +27,8 @@ def remove_emoji(text):
 
 
 def remove_links(text):
-    url_pattern = r"\S+\.\S+"
-    cleaned_text = []
-
-    for word in text.split():
-        if (
-                re.match(url_pattern, word)
-                or word.startswith("@")
-                or word.startswith("#")
-        ):
-            continue
-        cleaned_text.append(word)
-
-    return " ".join(cleaned_text)
+    text = re.sub(r"\.[.\s]+", ". ", text)  # collapse consecutive dots
+    text = re.sub(r"\S+\.\S+", "", text)  # remove urls
+    text = re.sub(r"@(\S*)", "", text)  # remove handles
+    text = re.sub(r"#(\S*)", "", text)  # remove hashtags
+    return text
