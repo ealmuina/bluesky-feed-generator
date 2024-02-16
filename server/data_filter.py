@@ -53,7 +53,9 @@ def _get_or_create_author(op):
     author, _ = User.get_or_create(
         did=author_did
     )
-    redis.lpush(statistics.QUEUE_NAME, author_did)
+    if not redis.sismember(statistics.QUEUE_INDEX, author_did):
+        redis.sadd(statistics.QUEUE_INDEX, author_did)
+        redis.lpush(statistics.QUEUE_NAME, author_did)
     return author
 
 

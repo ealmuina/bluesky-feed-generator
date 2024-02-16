@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
 QUEUE_NAME = "bsky-statistics"
+QUEUE_INDEX = "bsky-statistics-index"
 
 
 class StatisticsUpdater(Thread):
@@ -29,6 +30,7 @@ class StatisticsUpdater(Thread):
         while stop_event is None or not stop_event.is_set():
             _, user_did = self.redis.brpop(QUEUE_NAME)
             user_did = user_did.decode()
+            self.redis.srem(QUEUE_INDEX, user_did)
 
             try:
                 now = datetime.datetime.now()
