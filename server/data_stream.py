@@ -37,6 +37,9 @@ def _get_ops_by_type(commit: models.ComAtprotoSyncSubscribeRepos.Commit) -> dict
             elif (uri.collection == models.ids.AppBskyFeedPost
                   and models.is_record_type(record, models.AppBskyFeedPost)):
                 operation_by_type['posts']['created'].append({'record': record, **create_info})
+            elif (uri.collection == models.ids.AppBskyFeedRepost
+                  and models.is_record_type(record, models.AppBskyFeedRepost)):
+                operation_by_type['reposts']['created'].append({'record': record, **create_info})
             elif (uri.collection == models.ids.AppBskyGraphFollow
                   and models.is_record_type(record, models.AppBskyGraphFollow)):
                 operation_by_type['follows']['created'].append({'record': record, **create_info})
@@ -46,6 +49,8 @@ def _get_ops_by_type(commit: models.ComAtprotoSyncSubscribeRepos.Commit) -> dict
                 operation_by_type['likes']['deleted'].append({'uri': str(uri)})
             if uri.collection == models.ids.AppBskyFeedPost:
                 operation_by_type['posts']['deleted'].append({'uri': str(uri)})
+            if uri.collection == models.ids.AppBskyFeedRepost:
+                operation_by_type['reposts']['deleted'].append({'uri': str(uri)})
             if uri.collection == models.ids.AppBskyGraphFollow:
                 operation_by_type['follows']['deleted'].append({'uri': str(uri)})
 

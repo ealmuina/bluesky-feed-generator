@@ -47,6 +47,25 @@ class Post(BaseModel):
 PostLanguage = Post.languages.get_through_model()
 
 
+class Interaction(BaseModel):
+    LIKE, REPOST = range(2)
+
+    uri = peewee.CharField(index=True)
+    cid = peewee.CharField()
+
+    author = peewee.ForeignKeyField(User, related_name='likes')
+    post = peewee.ForeignKeyField(Post, related_name='likes')
+    interaction_type = peewee.IntegerField(
+        index=True,
+        choices=[
+            (LIKE, 'like'),
+            (REPOST, 'repost'),
+        ],
+    )
+
+    indexed_at = peewee.DateTimeField(default=datetime.utcnow)
+
+
 class SubscriptionState(BaseModel):
     service = peewee.CharField(unique=True)
     cursor = peewee.IntegerField()
@@ -58,7 +77,15 @@ class DbMetadata(BaseModel):
 
 if db.is_closed():
     db.connect()
-    db.create_tables([User, Language, Post, PostLanguage, SubscriptionState, DbMetadata])
+    db.create_tables([
+        User,
+        Language,
+        Post,
+        PostLanguage,
+        Interaction,
+        SubscriptionState,
+        DbMetadata
+    ])
 
     # DB migration
     current_version = 1

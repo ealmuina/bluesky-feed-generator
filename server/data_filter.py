@@ -1,7 +1,9 @@
+from itertools import cycle, chain
+
 from ftlangdetect.detect import get_or_load_model
 from redis import Redis
 
-from server.database import db, Post, Language, User
+from server.database import db, Post, Language, User, Interaction
 from server.tasks import statistics
 from server.utils import remove_emoji, remove_links
 
@@ -41,6 +43,20 @@ def detect_language(text, user_languages):
 
 
 def operations_callback(ops: dict) -> None:
+    _process_posts(ops)
+    _process_interactions(ops)
+
+
+def _get_or_create_author(op):
+    author_did = op["author"]
+    author, _ = User.get_or_create(
+        did=author_did
+    )
+    redis.lpush(statistics.QUEUE_NAME, author_did)
+    return author
+
+
+def _process_posts(ops):
     posts_to_create = []
     for created_post in ops['posts']['created']:
         record = created_post['record']
@@ -54,11 +70,7 @@ def operations_callback(ops: dict) -> None:
             reply_root = record.reply.root.uri
 
         # Get or create author
-        author_did = created_post["author"]
-        author, _ = User.get_or_create(
-            did=author_did
-        )
-        redis.lpush(statistics.QUEUE_NAME, author_did)
+        author = _get_or_create_author(created_post)
 
         # Bluesky user-tagged languages
         languages = created_post['record'].langs or []
@@ -94,3 +106,37 @@ def operations_callback(ops: dict) -> None:
                 languages = post_dict.pop("languages")
                 post = Post.create(**post_dict)
                 post.languages = list(languages)
+
+
+def _process_interactions(ops):
+    interactions_to_create = []
+    for interaction_type, created_interaction in chain(
+            zip(cycle([Interaction.LIKE]), ops['likes']['created']),
+            zip(cycle([Interaction.REPOST]), ops['reposts']['created'])
+    ):
+        record = created_interaction['record']
+
+        # Get author and Post
+        author = _get_or_create_author(created_interaction)
+        post = Post.get(uri=record.subject.uri)
+
+        interaction_dict = {
+            'author': author,
+            'post': post,
+            'uri': created_interaction['uri'],
+            'cid': created_interaction['cid'],
+            'interaction_type': interaction_type,
+        }
+        interactions_to_create.append(interaction_dict)
+
+    interactions_to_delete = [
+        p['uri']
+        for p in ops['likes']['deleted'] + ops['reposts']['deleted']
+    ]
+    if interactions_to_delete:
+        Interaction.delete().where(Interaction.uri.in_(interactions_to_delete))
+
+    if interactions_to_create:
+        with db.atomic():
+            for interaction_dict in interactions_to_create:
+                Interaction.create(**interaction_dict)
