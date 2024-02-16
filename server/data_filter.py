@@ -1,5 +1,6 @@
 from itertools import cycle, chain
 
+import peewee
 from ftlangdetect.detect import get_or_load_model
 from redis import Redis
 
@@ -118,7 +119,10 @@ def _process_interactions(ops):
 
         # Get author and Post
         author = _get_or_create_author(created_interaction)
-        post = Post.get(uri=record.subject.uri)
+        try:
+            post = Post.get(uri=record.subject.uri)
+        except peewee.DoesNotExist:
+            continue
 
         interaction_dict = {
             'author': author,
