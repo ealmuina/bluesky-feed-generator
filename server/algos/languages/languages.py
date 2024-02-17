@@ -10,9 +10,10 @@ def handler(language_code: str, cursor: Optional[str], limit: int) -> dict:
     language = Language.get(Language.code == language_code)
 
     posts = language.posts.where(
-        Post.reply_root.is_null(True)
+        Post.reply_root.is_null(True),
+        Post.created_at.is_null(False),
     ).order_by(
-        Post.indexed_at.desc(),
+        Post.created_at.desc(),
         Post.cid.desc(),
     ).limit(limit)
 

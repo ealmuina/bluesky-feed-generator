@@ -17,11 +17,11 @@ def handler(cursor: Optional[str], posts) -> dict:
         if len(cursor_parts) != 2:
             raise ValueError('Malformed cursor')
 
-        indexed_at, cid = cursor_parts
-        indexed_at = datetime.fromtimestamp(int(indexed_at) / 1000)
+        created_at, cid = cursor_parts
+        created_at = datetime.fromtimestamp(int(created_at) / 1000)
         posts = posts.where(
-            (Post.indexed_at < indexed_at)
-            | ((Post.indexed_at == indexed_at) & (Post.cid < cid))
+            (Post.created_at < created_at)
+            | ((Post.created_at == created_at) & (Post.cid < cid))
         )
 
     feed = [{'post': post.uri} for post in posts]
@@ -29,7 +29,7 @@ def handler(cursor: Optional[str], posts) -> dict:
     cursor = CURSOR_EOF
     last_post = posts[-1] if posts else None
     if last_post:
-        cursor = f'{int(last_post.indexed_at.timestamp() * 1000)}::{last_post.cid}'
+        cursor = f'{int(last_post.created_at.timestamp() * 1000)}::{last_post.cid}'
 
     return {
         'cursor': cursor,

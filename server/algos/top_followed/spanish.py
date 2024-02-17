@@ -14,9 +14,10 @@ def handler(cursor: Optional[str], limit: int) -> dict:
         User, on=(Post.author == User.id)
     ).where(
         Post.reply_root.is_null(True),
+        Post.created_at.is_null(False),
         User.followers_count > 500,
     ).order_by(
-        Post.indexed_at.desc(),
+        Post.created_at.desc(),
         Post.cid.desc(),
     ).limit(limit)
 
