@@ -41,6 +41,7 @@ class Post(BaseModel):
     reply_root = peewee.CharField(null=True, default=None)
 
     indexed_at = peewee.DateTimeField(default=datetime.utcnow)
+    created_at = peewee.DateTimeField(null=True)
     languages = peewee.ManyToManyField(Language, backref='posts')
 
 
@@ -64,6 +65,7 @@ class Interaction(BaseModel):
     )
 
     indexed_at = peewee.DateTimeField(default=datetime.utcnow)
+    created_at = peewee.DateTimeField(null=True)
 
 
 class SubscriptionState(BaseModel):

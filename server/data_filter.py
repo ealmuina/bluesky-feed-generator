@@ -1,6 +1,6 @@
 from itertools import cycle, chain
 
-import peewee
+from dateutil import parser
 from ftlangdetect.detect import get_or_load_model
 from redis import Redis
 
@@ -12,6 +12,10 @@ redis = Redis(host="redis")
 
 
 def detect_language(text, user_languages):
+    text = text.replace('\n', '. ').strip()
+    text = remove_emoji(text)
+    text = remove_links(text)
+
     if not text:
         return user_languages
 
@@ -48,15 +52,25 @@ def operations_callback(ops: dict) -> None:
     _process_interactions(ops)
 
 
-def _get_or_create_author(op):
+def _get_or_create_author(op, update_statistics=False):
     author_did = op["author"]
     author, _ = User.get_or_create(
         did=author_did
     )
-    if not redis.sismember(statistics.QUEUE_INDEX, author_did):
+    if update_statistics and not redis.sismember(statistics.QUEUE_INDEX, author_did):
         redis.sadd(statistics.QUEUE_INDEX, author_did)
         redis.lpush(statistics.QUEUE_NAME, author_did)
     return author
+
+
+def _get_or_create_post(post_uri, post_cid):
+    post, _ = Post.get_or_create(
+        uri=post_uri,
+        defaults={
+            "cid": post_cid,
+        }
+    )
+    return post
 
 
 def _process_posts(ops):
@@ -73,17 +87,11 @@ def _process_posts(ops):
             reply_root = record.reply.root.uri
 
         # Get or create author
-        author = _get_or_create_author(created_post)
+        author = _get_or_create_author(created_post, update_statistics=True)
 
-        # Bluesky user-tagged languages
-        languages = created_post['record'].langs or []
-
-        # Detect language
-        inlined_text = record.text.replace('\n', '. ').strip()
-        inlined_text = remove_emoji(inlined_text)
-        inlined_text = remove_links(inlined_text)
-        languages = detect_language(inlined_text, languages)
-
+        # Detect languages
+        languages = record.langs or []
+        languages = detect_language(record.text, languages)
         languages = {
             Language.get_or_create(code=lang)[0]
             for lang in languages
@@ -96,6 +104,7 @@ def _process_posts(ops):
             'reply_parent': reply_parent,
             'reply_root': reply_root,
             'languages': languages,
+            'created_at': parser.parse(record.created_at),
         }
         posts_to_create.append(post_dict)
 
@@ -121,10 +130,7 @@ def _process_interactions(ops):
 
         # Get author and Post
         author = _get_or_create_author(created_interaction)
-        try:
-            post = Post.get(uri=record.subject.uri)
-        except peewee.DoesNotExist:
-            continue
+        post = _get_or_create_post(record.subject.uri, record.subject.cid)
 
         interaction_dict = {
             'author': author,
@@ -132,6 +138,7 @@ def _process_interactions(ops):
             'uri': created_interaction['uri'],
             'cid': created_interaction['cid'],
             'interaction_type': interaction_type,
+            'created_at': parser.parse(record.created_at),
         }
         interactions_to_create.append(interaction_dict)
 
