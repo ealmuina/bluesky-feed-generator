@@ -6,7 +6,7 @@ from peewee import fn
 
 from server import config
 from server.algos import base
-from server.database import Post, Language, User, Interaction, PostLanguage
+from server.database import Post, Language, User, Interaction
 from server.utils import last_item, log10th
 
 uri = config.TOP_SPANISH_URI
@@ -14,24 +14,21 @@ uri = config.TOP_SPANISH_URI
 
 class TopSpanishAlgorithm:
     def __init__(self, min_followers=500):
-        self.language_id = 20  # Spanish
+        self.language = Language.get(Language.code == "es")
         self.min_followers = min_followers
 
     def _get_posts_from_top_accounts(self, limit, created_at, cid):
-        posts = Post.select(
+        posts = self.language.posts.select(
             Post.id,
             Post.uri,
             Post.cid,
             Post.created_at,
         ).join(
             User, on=(Post.author == User.id)
-        ).join(
-            PostLanguage, on=(PostLanguage.post_id == Post.id)
         ).where(
             Post.reply_root.is_null(True),
             Post.created_at <= datetime.utcnow(),
             User.followers_count > self.min_followers,
-            PostLanguage.language_id == self.language_id,
         ).order_by(
             Post.created_at.desc(),
             Post.cid.desc(),
@@ -45,7 +42,7 @@ class TopSpanishAlgorithm:
         return posts
 
     def _get_reposts_from_top_accounts(self, limit, created_at, cid):
-        posts = Post.select(
+        posts = self.language.posts.select(
             Post.id,
             Post.uri,
             Post.cid,
@@ -55,14 +52,11 @@ class TopSpanishAlgorithm:
             Interaction, on=(Interaction.post == Post.id)
         ).join(
             User, on=(User.id == Interaction.author)
-        ).join(
-            PostLanguage, on=(PostLanguage.post_id == Post.id)
         ).where(
             Post.created_at <= datetime.utcnow(),
             Interaction.interaction_type == Interaction.REPOST,
             Interaction.created_at <= datetime.utcnow(),
             User.followers_count > self.min_followers,
-            PostLanguage.language_id == self.language_id,
         ).group_by(
             Post.id,
             Post.uri,
@@ -80,27 +74,23 @@ class TopSpanishAlgorithm:
         return posts
 
     def _get_posts_with_likes_milestone(self, limit, created_at, cid):
-        posts = Post.select(
+        posts = self.language.posts.select(
             Post.id,
             Post.uri,
             Post.cid,
             log10th(Interaction.created_at).alias("created_at"),
-            fn.COUNT(Interaction.author.distinct()).alias("count_likes"),
         ).join(
             Interaction, on=(Interaction.post == Post.id)
-        ).join(
-            PostLanguage, on=(PostLanguage.post_id == Post.id)
         ).where(
             Post.created_at <= datetime.utcnow(),
             Interaction.interaction_type == Interaction.LIKE,
             Interaction.created_at <= datetime.utcnow(),
-            PostLanguage.language_id == self.language_id,
         ).group_by(
             Post.id,
             Post.uri,
             Post.cid,
         ).having(
-            fn.COUNT(Interaction.author.distinct()) >= 100,
+            fn.COUNT(Interaction.author.distinct()) >= 10,
         ).order_by(
             peewee.SQL("created_at DESC"),
             Post.cid.desc(),
