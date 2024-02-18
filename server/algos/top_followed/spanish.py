@@ -91,7 +91,7 @@ class TopSpanishAlgorithm:
             Post.uri,
             Post.cid,
         ).having(
-            fn.COUNT(Interaction.author.distinct()) >= 10,
+            fn.COUNT(Interaction.author.distinct()) >= 100,
         ).order_by(
             peewee.SQL("created_at DESC"),
             Post.cid.desc(),
