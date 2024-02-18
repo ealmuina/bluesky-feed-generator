@@ -84,11 +84,10 @@ def get_feed_skeleton():
     if not algo:
         return 'Unsupported algorithm', 400
 
-    # try:
-    #     requester_did = validate_auth(request)
-    # except AuthorizationError:
-    #     return 'Unauthorized', 401
-    requester_did = "did:plc:qinqxdwwxgme6r4lgmkry5qu"
+    try:
+        requester_did = validate_auth(request)
+    except AuthorizationError:
+        return 'Unauthorized', 401
 
     try:
         cursor = request.args.get('cursor', default=None, type=str)
