@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Optional
 
 from server.algos import base
@@ -11,7 +12,7 @@ def handler(language_code: str, cursor: Optional[str], limit: int) -> dict:
 
     posts = language.posts.where(
         Post.reply_root.is_null(True),
-        Post.created_at.is_null(False),
+        Post.created_at <= datetime.utcnow(),
     ).order_by(
         Post.created_at.desc(),
         Post.cid.desc(),

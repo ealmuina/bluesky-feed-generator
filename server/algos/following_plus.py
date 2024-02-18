@@ -29,7 +29,7 @@ class FollowingPlusAlgorithm:
             User, on=(User.id == Post.author)
         ).where(
             User.did.in_(user_follows_dids),
-            Post.created_at.is_null(False),
+            Post.created_at <= datetime.utcnow(),
         ).order_by(
             Post.created_at.desc(),
             Post.cid.desc(),
@@ -48,7 +48,7 @@ class FollowingPlusAlgorithm:
             Post.id,
             Post.uri,
             Post.cid,
-            Interaction.indexed_at.alias("created_at"),
+            Interaction.created_at.alias("created_at"),
             User.did.alias("like_by_did"),
         ).join(
             Interaction, on=(Interaction.post == Post.id)
@@ -56,20 +56,21 @@ class FollowingPlusAlgorithm:
             User, on=(User.id == Interaction.author)
         ).where(
             Interaction.interaction_type == Interaction.LIKE,
+            Interaction.created_at <= datetime.utcnow(),
             User.did.in_(user_follows_dids),
             Interaction.id.in_(
                 Interaction.select(Interaction.id).where(Interaction.post == Post.id).order_by(
-                    Interaction.indexed_at.asc()).offset(3).limit(1)
+                    Interaction.created_at.asc()).offset(3).limit(1)
             )
         ).order_by(
-            Interaction.indexed_at.desc(),
+            Interaction.created_at.desc(),
             Interaction.cid.desc(),
         ).limit(limit)
 
         if created_at:
             posts = posts.where(
-                (Interaction.indexed_at < created_at)
-                | ((Interaction.indexed_at == created_at) & (Interaction.cid < cid))
+                (Interaction.created_at < created_at)
+                | ((Interaction.created_at == created_at) & (Interaction.cid < cid))
             )
 
         return posts
@@ -79,7 +80,7 @@ class FollowingPlusAlgorithm:
             Post.id,
             Post.uri,
             Post.cid,
-            Interaction.indexed_at.alias("created_at"),
+            Interaction.created_at.alias("created_at"),
             Interaction.uri.alias("repost_uri"),
         ).join(
             Interaction, on=(Interaction.post == Post.id)
@@ -87,20 +88,21 @@ class FollowingPlusAlgorithm:
             User, on=(User.id == Interaction.author)
         ).where(
             Interaction.interaction_type == Interaction.REPOST,
+            Interaction.created_at <= datetime.utcnow(),
             User.did.in_(user_follows_dids),
             Interaction.id.in_(
                 Interaction.select(Interaction.id).where(Interaction.post == Post.id).order_by(
-                    Interaction.indexed_at.desc()).limit(1)
+                    Interaction.created_at.desc()).limit(1)
             )
         ).order_by(
-            Interaction.indexed_at.desc(),
+            Interaction.created_at.desc(),
             Interaction.cid.desc(),
         ).limit(limit)
 
         if created_at:
             posts = posts.where(
-                (Interaction.indexed_at < created_at)
-                | ((Interaction.indexed_at == created_at) & (Interaction.cid < cid))
+                (Interaction.created_at < created_at)
+                | ((Interaction.created_at == created_at) & (Interaction.cid < cid))
             )
 
         return posts

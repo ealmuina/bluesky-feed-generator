@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Optional
 
 from server import config
@@ -14,7 +15,7 @@ def handler(cursor: Optional[str], limit: int, requester_did: str) -> dict:
         User, on=(Post.author == User.id)
     ).where(
         Post.reply_root.is_null(True),
-        Post.created_at.is_null(False),
+        Post.created_at <= datetime.utcnow(),
         User.followers_count > 500,
     ).order_by(
         Post.created_at.desc(),
