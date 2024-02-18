@@ -15,7 +15,7 @@ uri = config.FOLLOWING_PLUS_URI
 
 
 class FollowingPlusAlgorithm:
-    def __init__(self, min_likes=2):
+    def __init__(self, min_likes=3):
         self.client = Client()
         self.client.login(
             os.environ.get("STATISTICS_USER"),
