@@ -1,3 +1,4 @@
+from datetime import datetime
 from itertools import cycle, chain
 
 from dateutil import parser
@@ -64,12 +65,15 @@ def _get_or_create_author(op, update_statistics=False):
 
 
 def _get_or_create_post(post_uri, post_cid):
-    post, _ = Post.get_or_create(
+    post, created = Post.get_or_create(
         uri=post_uri,
         defaults={
             "cid": post_cid,
         }
     )
+    if not created:
+        post.indexed_at = datetime.utcnow()
+        post.save()
     return post
 
 

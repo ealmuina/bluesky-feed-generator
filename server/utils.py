@@ -56,3 +56,15 @@ def last_item(field):
             peewee.SQL('), 1))])')
         ]
     )
+
+
+def log10th(field):
+    return peewee.NodeList(
+        [
+            peewee.SQL('((array_agg('),
+            field,
+            peewee.SQL('))[(power(10, log10((array_upper(array_agg('),
+            field,
+            peewee.SQL('), 1)))))])')
+        ]
+    )
