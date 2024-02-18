@@ -29,6 +29,7 @@ class FollowingPlusAlgorithm:
             User, on=(User.id == Post.author)
         ).where(
             User.did.in_(user_follows_dids),
+            Post.reply_root.is_null(True),
             Post.created_at <= datetime.utcnow(),
         ).order_by(
             Post.created_at.desc(),
