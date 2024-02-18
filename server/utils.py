@@ -44,3 +44,15 @@ def nth_item(field, index):
             peewee.SQL('))[%s]', (index,))
         ]
     )
+
+
+def last_item(field):
+    return peewee.NodeList(
+        [
+            peewee.SQL('((array_agg('),
+            field,
+            peewee.SQL('))[(array_upper(array_agg('),
+            field,
+            peewee.SQL('), 1))])')
+        ]
+    )

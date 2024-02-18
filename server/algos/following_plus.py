@@ -9,7 +9,7 @@ from peewee import fn
 from server import config
 from server.algos import base
 from server.database import Post, User, Interaction
-from server.utils import nth_item
+from server.utils import nth_item, last_item
 
 uri = config.FOLLOWING_PLUS_URI
 
@@ -61,7 +61,6 @@ class FollowingPlusAlgorithm:
             User, on=(User.id == Interaction.author)
         ).where(
             Post.created_at <= datetime.utcnow(),
-            Interaction.post == Post.id,
             Interaction.interaction_type == Interaction.LIKE,
             Interaction.created_at <= datetime.utcnow(),
             User.did.in_(user_follows_dids),
@@ -89,8 +88,8 @@ class FollowingPlusAlgorithm:
             Post.id,
             Post.uri,
             Post.cid,
-            Interaction.created_at.alias("created_at"),
-            Interaction.uri.alias("repost_uri"),
+            last_item(Interaction.created_at).alias("created_at"),
+            last_item(Interaction.uri).alias("repost_uri"),
         ).join(
             Interaction, on=(Interaction.post == Post.id)
         ).join(
@@ -100,13 +99,13 @@ class FollowingPlusAlgorithm:
             Interaction.interaction_type == Interaction.REPOST,
             Interaction.created_at <= datetime.utcnow(),
             User.did.in_(user_follows_dids),
-            Interaction.id.in_(
-                Interaction.select(Interaction.id).where(Interaction.post == Post.id).order_by(
-                    Interaction.created_at.desc()).limit(1)
-            )
+        ).group_by(
+            Post.id,
+            Post.uri,
+            Post.cid,
         ).order_by(
-            Interaction.created_at.desc(),
-            Interaction.cid.desc(),
+            peewee.SQL("created_at DESC"),
+            Post.cid.desc(),
         ).limit(limit)
 
         if created_at:
