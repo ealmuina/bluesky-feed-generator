@@ -82,13 +82,10 @@ class TopSpanishAlgorithm:
             fn.COUNT(Interaction.author.distinct()).alias("count_likes"),
         ).join(
             Interaction, on=(Interaction.post == Post.id)
-        ).join(
-            User, on=(User.id == Interaction.author)
         ).where(
             Post.created_at <= datetime.utcnow(),
             Interaction.interaction_type == Interaction.LIKE,
             Interaction.created_at <= datetime.utcnow(),
-            User.followers_count > self.min_followers,
         ).group_by(
             Post.id,
             Post.uri,
