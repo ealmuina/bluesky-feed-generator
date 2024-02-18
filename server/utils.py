@@ -1,5 +1,7 @@
 import re
 
+import peewee
+
 
 def remove_emoji(text):
     """Removes all emojis from a string using regular expressions."""
@@ -32,3 +34,13 @@ def remove_links(text):
     text = re.sub(r"@(\S*)", "", text)  # remove handles
     text = re.sub(r"#(\S*)", "", text)  # remove hashtags
     return text
+
+
+def nth_item(field, index):
+    return peewee.NodeList(
+        [
+            peewee.SQL('(array_agg('),
+            field,
+            peewee.SQL('))[%s]', (index,))
+        ]
+    )
