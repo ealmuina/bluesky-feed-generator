@@ -6,7 +6,7 @@ from server import config
 uri = config.SPANISH_URI
 
 
-def handler(cursor: Optional[str], limit: int) -> dict:
+def handler(cursor: Optional[str], limit: int, requester_did: str) -> dict:
     return algo_languages.handler(
         language_code="es",
         cursor=cursor,

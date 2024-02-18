@@ -9,8 +9,11 @@ if HOSTNAME is None:
 if SERVICE_DID is None:
     SERVICE_DID = f'did:web:{HOSTNAME}'
 
-SPANISH_URI = os.environ.get('SPANISH_URI')
 TOP_SPANISH_URI = os.environ.get('TOP_SPANISH_URI')
+
+SPANISH_URI = os.environ.get('SPANISH_URI')
 CATALAN_URI = os.environ.get('CATALAN_URI')
 PORTUGUESE_URI = os.environ.get('PORTUGUESE_URI')
 GALICIAN_URI = os.environ.get('GALICIAN_URI')
+
+FOLLOWING_PLUS_URI = os.environ.get('FOLLOWING_PLUS_URI')

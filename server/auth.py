@@ -2,7 +2,6 @@ from atproto import DidInMemoryCache, IdResolver, verify_jwt
 from atproto.exceptions import TokenInvalidSignatureError
 from flask import Request
 
-
 _CACHE = DidInMemoryCache()
 _ID_RESOLVER = IdResolver(cache=_CACHE)
 
@@ -33,7 +32,7 @@ def validate_auth(request: 'Request') -> str:
     if not auth_header.startswith(_AUTHORIZATION_HEADER_VALUE_PREFIX):
         raise AuthorizationError('Invalid authorization header')
 
-    jwt = auth_header[len(_AUTHORIZATION_HEADER_VALUE_PREFIX) :].strip()
+    jwt = auth_header[len(_AUTHORIZATION_HEADER_VALUE_PREFIX):].strip()
 
     try:
         return verify_jwt(jwt, _ID_RESOLVER.did.resolve_atproto_key).iss

@@ -3,6 +3,7 @@ import signal
 import threading
 
 from server import config, data_stream
+from server.auth import AuthorizationError, validate_auth
 from server.tasks import cleaner, statistics
 
 from flask import Flask, jsonify, request
@@ -83,19 +84,15 @@ def get_feed_skeleton():
     if not algo:
         return 'Unsupported algorithm', 400
 
-    # Example of how to check auth if giving user-specific results:
-    """
-    from server.auth import AuthorizationError, validate_auth
     try:
         requester_did = validate_auth(request)
     except AuthorizationError:
         return 'Unauthorized', 401
-    """
 
     try:
         cursor = request.args.get('cursor', default=None, type=str)
         limit = request.args.get('limit', default=20, type=int)
-        body = algo(cursor, limit)
+        body = algo(cursor, limit, requester_did)
     except ValueError:
         return 'Malformed cursor', 400
 

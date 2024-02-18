@@ -7,7 +7,7 @@ from server.database import Post, Language, User
 uri = config.TOP_SPANISH_URI
 
 
-def handler(cursor: Optional[str], limit: int) -> dict:
+def handler(cursor: Optional[str], limit: int, requester_did: str) -> dict:
     language = Language.get(Language.code == "es")
 
     posts = language.posts.join(
