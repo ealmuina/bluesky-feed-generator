@@ -28,7 +28,7 @@ class TopSpanishAlgorithm:
         ).where(
             Post.reply_root.is_null(True),
             Post.created_at <= datetime.utcnow(),
-            User.followers_count > self.min_followers,
+            User.followers_count >= self.min_followers,
         ).order_by(
             Post.created_at.desc(),
             Post.cid.desc(),
@@ -56,7 +56,7 @@ class TopSpanishAlgorithm:
             Post.created_at <= datetime.utcnow(),
             Interaction.interaction_type == Interaction.REPOST,
             Interaction.created_at <= datetime.utcnow(),
-            User.followers_count > self.min_followers,
+            User.followers_count >= self.min_followers,
         ).group_by(
             Post.id,
             Post.uri,
@@ -81,10 +81,13 @@ class TopSpanishAlgorithm:
             log10th(Interaction.created_at).alias("created_at"),
         ).join(
             Interaction, on=(Interaction.post == Post.id)
+        ).join(
+            User, on=(User.id == Post.author)
         ).where(
             Post.created_at <= datetime.utcnow(),
             Interaction.interaction_type == Interaction.LIKE,
             Interaction.created_at <= datetime.utcnow(),
+            User.followers_count < self.min_followers,
         ).group_by(
             Post.id,
             Post.uri,
