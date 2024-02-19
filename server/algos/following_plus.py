@@ -152,7 +152,10 @@ class FollowingPlusAlgorithm:
         posts_from_likes = self._get_posts_from_likes(limit, created_at, cid, user_follows_dids)
         posts_combined = sorted(
             [
-                *posts_from_follows.dicts(),
+                *map(
+                    lambda p: {"expand_thread": True, **p},
+                    posts_from_follows.dicts()
+                ),
                 *posts_from_reposts.dicts(),
                 *posts_from_likes.dicts(),
             ],
@@ -166,6 +169,29 @@ class FollowingPlusAlgorithm:
             posts_combined_dict.setdefault(post['id'], post)
 
         posts_combined = list(posts_combined_dict.values())[:limit]
+
+        # Expand thread
+        RootPost = Post.alias()
+        for i, post in enumerate(posts_combined):
+            if not post.get("expand_thread"):
+                continue
+
+            thread = Post.select(
+                Post.uri,
+                Post.created_at,
+            ).join(
+                RootPost, on=(RootPost.uri == Post.reply_root)
+            ).where(
+                RootPost.uri == post["uri"],
+                Post.author == RootPost.author,
+            )
+            if thread.count() > 1:
+                posts_combined.insert(i + 1, {
+                    "post": thread.order_by(Post.created_at.asc()).first().uri
+                })
+                posts_combined.insert(i + 2, {
+                    "post": thread.order_by(Post.created_at.desc()).first().uri
+                })
 
         feed = []
         for post in posts_combined:
