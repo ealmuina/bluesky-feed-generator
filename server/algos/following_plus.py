@@ -187,10 +187,10 @@ class FollowingPlusAlgorithm:
             )
             if thread.count() > 1:
                 posts_combined.insert(i + 1, {
-                    "post": thread.order_by(Post.created_at.asc()).first().uri
+                    "uri": thread.order_by(Post.created_at.asc()).first().uri
                 })
                 posts_combined.insert(i + 2, {
-                    "post": thread.order_by(Post.created_at.desc()).first().uri
+                    "uri": thread.order_by(Post.created_at.desc()).first().uri
                 })
 
         feed = []
