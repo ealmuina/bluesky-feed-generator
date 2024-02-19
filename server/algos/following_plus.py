@@ -57,7 +57,7 @@ class FollowingPlusAlgorithm:
             Post.uri,
             Post.cid,
             nth_item(Interaction.created_at, self.min_likes).alias("created_at"),
-            nth_item(User.did, self.min_likes).alias("like_by_did"),
+            nth_item(InteractionUser.did, self.min_likes).alias("like_by_did"),
         ).join(
             Interaction, on=(Interaction.post == Post.id)
         ).join(
