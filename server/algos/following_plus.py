@@ -48,7 +48,10 @@ class FollowingPlusAlgorithm:
 
         return posts
 
-    def _get_posts_from_likes(self, limit, created_at, cid, user_follows_dids):
+    def _get_posts_from_likes(self, limit, created_at, cid, user_follows_dids, requester_did):
+        InteractionUser = User.alias()
+        PostUser = User.alias()
+
         posts = Post.select(
             Post.id,
             Post.uri,
@@ -58,12 +61,19 @@ class FollowingPlusAlgorithm:
         ).join(
             Interaction, on=(Interaction.post == Post.id)
         ).join(
-            User, on=(User.id == Interaction.author)
+            InteractionUser, on=(InteractionUser.id == Interaction.author)
+        ).join(
+            PostUser, on=(PostUser.id == Post.author)
         ).where(
             Post.created_at <= datetime.utcnow(),
             Interaction.interaction_type == Interaction.LIKE,
             Interaction.created_at <= datetime.utcnow(),
-            User.did.in_(user_follows_dids),
+            InteractionUser.did.in_(user_follows_dids),
+            PostUser.did != requester_did,
+            (
+                    PostUser.did.not_in(user_follows_dids)
+                    | Post.reply_parent.is_null(False)
+            )
         ).group_by(
             Post.id,
             Post.uri,
@@ -149,7 +159,7 @@ class FollowingPlusAlgorithm:
 
         posts_from_follows = self._get_posts_from_follows(limit, created_at, cid, user_follows_dids + [requester_did])
         posts_from_reposts = self._get_posts_from_reposts(limit, created_at, cid, user_follows_dids + [requester_did])
-        posts_from_likes = self._get_posts_from_likes(limit, created_at, cid, user_follows_dids)
+        posts_from_likes = self._get_posts_from_likes(limit, created_at, cid, user_follows_dids, requester_did)
         posts_combined = sorted(
             [
                 *map(
