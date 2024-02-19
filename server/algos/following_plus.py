@@ -170,27 +170,31 @@ class FollowingPlusAlgorithm:
 
         posts_combined = list(posts_combined_dict.values())[:limit]
 
-        # Expand thread
         RootPost = Post.alias()
-        for i, post in enumerate(posts_combined):
+        ReplyPost = Post.alias()
+        for i, post in enumerate(list(posts_combined)):
             if not post.get("expand_thread"):
                 continue
 
             thread = Post.select(
                 Post.uri,
+                Post.author,
                 Post.created_at,
             ).join(
                 RootPost, on=(RootPost.uri == Post.reply_root)
+            ).join(
+                ReplyPost, on=(ReplyPost.uri == Post.reply_parent)
             ).where(
                 RootPost.uri == post["uri"],
                 Post.author == RootPost.author,
+                Post.author == ReplyPost.author,
+            ).order_by(
+                Post.created_at.asc()
             )
-            if thread.count() > 1:
-                posts_combined.insert(i + 1, {
-                    "uri": thread.order_by(Post.created_at.asc()).first().uri
-                })
-                posts_combined.insert(i + 2, {
-                    "uri": thread.order_by(Post.created_at.desc()).first().uri
+            for post in thread:
+                posts_combined.insert(i, {
+                    "uri": post.uri,
+                    "created_at": post.created_at,
                 })
 
         feed = []
