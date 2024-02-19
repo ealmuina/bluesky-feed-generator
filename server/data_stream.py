@@ -42,7 +42,6 @@ def _get_ops_by_type(commit: models.ComAtprotoSyncSubscribeRepos.Commit) -> defa
         if op.action == 'delete':
             operation_by_type[uri.collection]['deleted'].append({'uri': str(uri)})
 
-
     return operation_by_type
 
 
@@ -50,7 +49,6 @@ def run(name, operations_callback, stream_stop_event=None):
     while stream_stop_event is None or not stream_stop_event.is_set():
         try:
             _run(name, operations_callback, stream_stop_event)
-            operation_by_type[uri.collection]['deleted'].append({'uri': str(uri)})
         except:
             continue
 
