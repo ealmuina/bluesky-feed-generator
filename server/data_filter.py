@@ -1,6 +1,8 @@
+from collections import defaultdict
 from datetime import datetime
 from itertools import cycle, chain
 
+from atproto import models
 from dateutil import parser
 from ftlangdetect.detect import get_or_load_model
 from redis import Redis
@@ -48,7 +50,7 @@ def detect_language(text, user_languages):
     return []
 
 
-def operations_callback(ops: dict) -> None:
+def operations_callback(ops: defaultdict) -> None:
     _process_posts(ops)
     _process_interactions(ops)
 
@@ -79,7 +81,7 @@ def _get_or_create_post(post_uri, post_cid):
 
 def _process_posts(ops):
     posts_to_create = []
-    for created_post in ops['posts']['created']:
+    for created_post in ops[models.ids.AppBskyFeedPost]['created']:
         record = created_post['record']
 
         reply_parent = None
@@ -112,7 +114,7 @@ def _process_posts(ops):
         }
         posts_to_create.append(post_dict)
 
-    posts_to_delete = [p['uri'] for p in ops['posts']['deleted']]
+    posts_to_delete = [p['uri'] for p in ops[models.ids.AppBskyFeedPost]['deleted']]
     if posts_to_delete:
         Post.delete().where(Post.uri.in_(posts_to_delete))
 
@@ -127,8 +129,8 @@ def _process_posts(ops):
 def _process_interactions(ops):
     interactions_to_create = []
     for interaction_type, created_interaction in chain(
-            zip(cycle([Interaction.LIKE]), ops['likes']['created']),
-            zip(cycle([Interaction.REPOST]), ops['reposts']['created'])
+            zip(cycle([Interaction.LIKE]), ops[models.ids.AppBskyFeedLike]['created']),
+            zip(cycle([Interaction.REPOST]), ops[models.ids.AppBskyFeedRepost]['created'])
     ):
         record = created_interaction['record']
 
@@ -148,7 +150,7 @@ def _process_interactions(ops):
 
     interactions_to_delete = [
         p['uri']
-        for p in ops['likes']['deleted'] + ops['reposts']['deleted']
+        for p in ops[models.ids.AppBskyFeedLike]['deleted'] + ops[models.ids.AppBskyFeedRepost]['deleted']
     ]
     if interactions_to_delete:
         Interaction.delete().where(Interaction.uri.in_(interactions_to_delete))

@@ -1,6 +1,6 @@
 annotated-types==0.6.0
 anyio==4.2.0
-atproto==0.0.40
+atproto==0.0.42
 blinker==1.7.0
 certifi==2024.2.2
 cffi==1.16.0
