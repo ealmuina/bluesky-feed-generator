@@ -7,15 +7,16 @@ from peewee import fn
 from server import config
 from server.algos import base
 from server.database import Post, Language, User, Interaction
-from server.utils import last_item, log10th
+from server.utils import last_item, nth_item
 
 uri = config.TOP_SPANISH_URI
 
 
 class TopSpanishAlgorithm:
-    def __init__(self, min_followers=500):
+    def __init__(self, min_followers=500, min_likes=20):
         self.language = Language.get(Language.code == "es")
         self.min_followers = min_followers
+        self.min_likes = min_likes
 
     def _get_posts_from_top_accounts(self, limit, created_at, cid):
         posts = self.language.posts.select(
@@ -78,7 +79,7 @@ class TopSpanishAlgorithm:
             Post.id,
             Post.uri,
             Post.cid,
-            log10th(Interaction.created_at).alias("created_at"),
+            nth_item(Interaction.created_at, self.min_likes).alias("created_at"),
         ).join(
             Interaction, on=(Interaction.post == Post.id)
         ).join(
@@ -93,7 +94,7 @@ class TopSpanishAlgorithm:
             Post.uri,
             Post.cid,
         ).having(
-            fn.COUNT(Interaction.author.distinct()) >= 10,
+            fn.COUNT(Interaction.author.distinct()) >= self.min_likes,
         ).order_by(
             peewee.SQL("created_at DESC"),
             Post.cid.desc(),
