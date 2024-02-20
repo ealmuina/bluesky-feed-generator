@@ -53,8 +53,8 @@ class Interaction(BaseModel):
     uri = peewee.CharField(index=True)
     cid = peewee.CharField()
 
-    author = peewee.ForeignKeyField(User, related_name='likes')
-    post = peewee.ForeignKeyField(Post, related_name='likes')
+    author = peewee.ForeignKeyField(User, related_name='likes', on_delete="CASCADE")
+    post = peewee.ForeignKeyField(Post, related_name='likes', on_delete="CASCADE")
     interaction_type = peewee.IntegerField(
         index=True,
         choices=[
