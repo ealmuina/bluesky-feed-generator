@@ -14,7 +14,7 @@ uri = config.TOP_SPANISH_URI
 
 class TopSpanishAlgorithm:
     def __init__(self, min_followers=500, min_likes=20):
-        self.language = Language.get(Language.code == "es")
+        self.language = Language.get_or_none(Language.code == "es")
         self.min_followers = min_followers
         self.min_likes = min_likes
 
