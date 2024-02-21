@@ -17,7 +17,7 @@ class BaseModel(peewee.Model):
 
 
 class User(BaseModel):
-    did = peewee.CharField(index=True)
+    did = peewee.CharField(unique=True)
     handle = peewee.CharField(null=True)
     followers_count = peewee.IntegerField(null=True)
     follows_count = peewee.IntegerField(null=True)
@@ -34,13 +34,13 @@ class Language(BaseModel):
 class Post(BaseModel):
     author = peewee.ForeignKeyField(User, related_name='posts', null=True)
 
-    uri = peewee.CharField(index=True)
-    cid = peewee.CharField()
-    reply_parent = peewee.CharField(null=True, default=None)
-    reply_root = peewee.CharField(null=True, default=None)
+    uri = peewee.CharField(unique=True)
+    cid = peewee.CharField(index=True)
+    reply_parent = peewee.CharField(null=True, default=None, index=True)
+    reply_root = peewee.CharField(null=True, default=None, index=True)
 
     indexed_at = peewee.DateTimeField(default=datetime.utcnow)
-    created_at = peewee.DateTimeField(null=True)
+    created_at = peewee.DateTimeField(null=True, index=True)
     languages = peewee.ManyToManyField(Language, backref='posts')
 
 
@@ -50,7 +50,7 @@ PostLanguage = Post.languages.get_through_model()
 class Interaction(BaseModel):
     LIKE, REPOST = range(2)
 
-    uri = peewee.CharField(index=True)
+    uri = peewee.CharField(unique=True)
     cid = peewee.CharField()
 
     author = peewee.ForeignKeyField(User, related_name='likes', on_delete="CASCADE")
@@ -64,7 +64,7 @@ class Interaction(BaseModel):
     )
 
     indexed_at = peewee.DateTimeField(default=datetime.utcnow)
-    created_at = peewee.DateTimeField(null=True)
+    created_at = peewee.DateTimeField(null=True, index=True)
 
 
 class SubscriptionState(BaseModel):

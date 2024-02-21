@@ -15,6 +15,11 @@ redis = Redis(host="redis")
 
 
 def detect_language(text, user_languages):
+    user_languages = map(str.lower, user_languages)
+    user_languages = [
+        language.split("-")[0] for language in user_languages
+    ]
+
     text = text.replace('\n', '. ').strip()
     text = remove_emoji(text)
     text = remove_links(text)
@@ -71,6 +76,7 @@ def _get_or_create_post(post_uri, post_cid):
         uri=post_uri,
         defaults={
             "cid": post_cid,
+            "created_at": datetime.utcnow(),
         }
     )
     if not created:
