@@ -40,7 +40,7 @@ def migrate(migrator: Migrator, database: pw.Database, *, fake=False):
     @migrator.create_model
     class User(pw.Model):
         id = pw.AutoField()
-        did = pw.CharField(index=True, max_length=255)
+        did = pw.CharField(max_length=255, unique=True)
         handle = pw.CharField(max_length=255, null=True)
         followers_count = pw.IntegerField(null=True)
         follows_count = pw.IntegerField(null=True)
@@ -55,11 +55,12 @@ def migrate(migrator: Migrator, database: pw.Database, *, fake=False):
     class Post(pw.Model):
         id = pw.AutoField()
         author = pw.ForeignKeyField(column_name='author_id', field='id', model=migrator.orm['user'], null=True)
-        uri = pw.CharField(index=True, max_length=255)
-        cid = pw.CharField(max_length=255)
-        reply_parent = pw.CharField(max_length=255, null=True)
-        reply_root = pw.CharField(max_length=255, null=True)
+        uri = pw.CharField(max_length=255, unique=True)
+        cid = pw.CharField(index=True, max_length=255)
+        reply_parent = pw.CharField(index=True, max_length=255, null=True)
+        reply_root = pw.CharField(index=True, max_length=255, null=True)
         indexed_at = pw.DateTimeField()
+        created_at = pw.DateTimeField(index=True, null=True)
 
         class Meta:
             table_name = "post"
@@ -67,12 +68,13 @@ def migrate(migrator: Migrator, database: pw.Database, *, fake=False):
     @migrator.create_model
     class Interaction(pw.Model):
         id = pw.AutoField()
-        uri = pw.CharField(index=True, max_length=255)
+        uri = pw.CharField(max_length=255, unique=True)
         cid = pw.CharField(max_length=255)
-        author = pw.ForeignKeyField(column_name='author_id', field='id', model=migrator.orm['user'])
-        post = pw.ForeignKeyField(column_name='post_id', field='id', model=migrator.orm['post'])
+        author = pw.ForeignKeyField(column_name='author_id', field='id', model=migrator.orm['user'], on_delete='CASCADE')
+        post = pw.ForeignKeyField(column_name='post_id', field='id', model=migrator.orm['post'], on_delete='CASCADE')
         interaction_type = pw.IntegerField(index=True)
         indexed_at = pw.DateTimeField()
+        created_at = pw.DateTimeField(index=True, null=True)
 
         class Meta:
             table_name = "interaction"
