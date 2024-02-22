@@ -102,17 +102,10 @@ class DiscoverAlgorithm:
         posts = self._get_posts_from_likes(limit, created_at, cid, user_follows_dids, requester_did)
         posts = list(posts.dicts())
 
-        feed = []
-        for post in posts:
-            feed_entry = {'post': post['uri']}
-
-            if repost_uri := post.get('repost_uri'):
-                feed_entry['reason'] = {
-                    '$type': 'app.bsky.feed.defs#skeletonReasonRepost',
-                    'repost': repost_uri,
-                }
-
-            feed.append(feed_entry)
+        feed = [
+            {'post': post['uri']}
+            for post in posts
+        ]
 
         cursor = base.CURSOR_EOF
         last_post = posts[-1] if posts else None
