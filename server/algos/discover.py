@@ -15,7 +15,7 @@ uri = config.DISCOVER_URI
 
 
 class DiscoverAlgorithm:
-    def __init__(self, min_likes=3):
+    def __init__(self, min_likes=2):
         self.client = Client()
         self.client.login(
             os.environ.get("STATISTICS_USER"),
