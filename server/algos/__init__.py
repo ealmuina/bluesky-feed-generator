@@ -1,5 +1,5 @@
 import server.algos.top_followed.spanish as top_spanish
-from .following_plus import FollowingPlusAlgorithm
+from .discover import DiscoverAlgorithm
 from .languages import spanish, catalan, portuguese, galician, basque
 
 algos = {
@@ -11,5 +11,5 @@ algos = {
     portuguese.uri: portuguese.handler,
     spanish.uri: spanish.handler,
 
-    following_plus.uri: FollowingPlusAlgorithm().handle,
+    discover.uri: DiscoverAlgorithm().handle,
 }

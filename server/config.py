@@ -17,4 +17,4 @@ GALICIAN_URI = os.environ.get('GALICIAN_URI')
 PORTUGUESE_URI = os.environ.get('PORTUGUESE_URI')
 SPANISH_URI = os.environ.get('SPANISH_URI')
 
-FOLLOWING_PLUS_URI = os.environ.get('FOLLOWING_PLUS_URI')
+DISCOVER_URI = os.environ.get('DISCOVER_URI')
