@@ -1,6 +1,7 @@
 from datetime import datetime
 
 import peewee
+import playhouse.postgres_ext as peewee_postgres
 
 db = peewee.PostgresqlDatabase(
     "bsky_feeds",
@@ -67,6 +68,15 @@ class Interaction(BaseModel):
     created_at = peewee.DateTimeField(null=True, index=True)
 
 
+class FeedCache(BaseModel):
+    uri = peewee.CharField(index=True)
+
+    created_at = peewee.DateTimeField(index=True)
+    cid = peewee.CharField(index=True)
+
+    content = peewee_postgres.JSONField()
+
+
 class SubscriptionState(BaseModel):
     service = peewee.CharField(unique=True)
     cursor = peewee.IntegerField()
@@ -80,5 +90,6 @@ if db.is_closed():
         Post,
         PostLanguage,
         Interaction,
+        FeedCache,
         SubscriptionState,
     ])

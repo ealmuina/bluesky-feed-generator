@@ -4,7 +4,7 @@ import threading
 
 from server import config, data_stream
 from server.auth import AuthorizationError, validate_auth
-from server.tasks import cleaner, statistics
+from server.tasks import cleaner, statistics, algorithm_cache
 
 from flask import Flask, jsonify, request
 
@@ -30,6 +30,9 @@ statistics_updater = statistics.StatisticsUpdater()
 threading.Thread(
     target=statistics_updater.run, args=(stop_event,)
 ).start()
+
+# Populate cached algorithms threads
+algorithm_cache.run()
 
 
 def sigint_handler(*_):
