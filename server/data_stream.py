@@ -1,5 +1,4 @@
 from collections import defaultdict
-from concurrent.futures import ProcessPoolExecutor
 
 from atproto import AtUri, CAR, firehose_models, FirehoseSubscribeReposClient, models, parse_subscribe_repos_message
 
@@ -66,26 +65,25 @@ def _run(name, operations_callback, stream_stop_event=None):
     if not state:
         SubscriptionState.create(service=name, cursor=0)
 
-    with ProcessPoolExecutor() as executor:
-        def on_message_handler(message: firehose_models.MessageFrame) -> None:
-            # stop on next message if requested
-            if stream_stop_event and stream_stop_event.is_set():
-                client.stop()
-                return
+    def on_message_handler(message: firehose_models.MessageFrame) -> None:
+        # stop on next message if requested
+        if stream_stop_event and stream_stop_event.is_set():
+            client.stop()
+            return
 
-            commit = parse_subscribe_repos_message(message)
-            if not isinstance(commit, models.ComAtprotoSyncSubscribeRepos.Commit):
-                return
+        commit = parse_subscribe_repos_message(message)
+        if not isinstance(commit, models.ComAtprotoSyncSubscribeRepos.Commit):
+            return
 
-            # update stored state every ~20 events
-            if commit.seq % 20 == 0:
-                logger.info(f'Updated cursor for {name} to {commit.seq}')
-                client.update_params(models.ComAtprotoSyncSubscribeRepos.Params(cursor=commit.seq))
-                SubscriptionState.update(cursor=commit.seq).where(SubscriptionState.service == name).execute()
+        # update stored state every ~20 events
+        if commit.seq % 20 == 0:
+            logger.info(f'Updated cursor for {name} to {commit.seq}')
+            client.update_params(models.ComAtprotoSyncSubscribeRepos.Params(cursor=commit.seq))
+            SubscriptionState.update(cursor=commit.seq).where(SubscriptionState.service == name).execute()
 
-            if not commit.blocks:
-                return
+        if not commit.blocks:
+            return
 
-            executor.submit(operations_callback, _get_ops_by_type(commit))
+        operations_callback(_get_ops_by_type(commit))
 
-        client.start(on_message_handler)
+    client.start(on_message_handler)
