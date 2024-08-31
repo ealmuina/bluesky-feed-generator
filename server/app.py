@@ -1,19 +1,23 @@
-import sys
+import os
 import signal
+import sys
 import threading
-
-from server import config, data_stream
-from server.auth import AuthorizationError, validate_auth
-from server.tasks import cleaner, statistics
 
 from flask import Flask, jsonify, request
 
+from server import config, data_stream
 from server.algos import algos
-from server.data_filter import operations_callback
+from server.auth import AuthorizationError, validate_auth
+from server.data_filter import operations_callback, PostProcessor
+from server.tasks import cleaner, statistics
 
 app = Flask(__name__)
 
 stop_event = threading.Event()
+
+# Posts process
+for _ in range(os.cpu_count()):
+    PostProcessor().start()
 
 # Stream thread
 threading.Thread(
