@@ -1,5 +1,5 @@
 from collections import defaultdict
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ProcessPoolExecutor
 
 from atproto import AtUri, CAR, firehose_models, FirehoseSubscribeReposClient, models, parse_subscribe_repos_message
 
@@ -66,7 +66,7 @@ def _run(name, operations_callback, stream_stop_event=None):
     if not state:
         SubscriptionState.create(service=name, cursor=0)
 
-    with ThreadPoolExecutor() as executor:
+    with ProcessPoolExecutor() as executor:
         def on_message_handler(message: firehose_models.MessageFrame) -> None:
             # stop on next message if requested
             if stream_stop_event and stream_stop_event.is_set():
