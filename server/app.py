@@ -1,4 +1,3 @@
-import os
 import signal
 import sys
 import threading
@@ -16,7 +15,7 @@ app = Flask(__name__)
 stop_event = threading.Event()
 
 # Posts process
-for _ in range(os.cpu_count()):
+for _ in range(10):
     PostProcessor().start()
 
 # Stream thread
