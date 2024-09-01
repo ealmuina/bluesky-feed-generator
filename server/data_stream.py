@@ -75,8 +75,8 @@ def _run(name, operations_callback, stream_stop_event=None):
         if not isinstance(commit, models.ComAtprotoSyncSubscribeRepos.Commit):
             return
 
-        # update stored state every ~20 events
-        if commit.seq % 20 == 0:
+        # update stored state every ~200 events
+        if commit.seq % 200 == 0:
             logger.info(f'Updated cursor for {name} to {commit.seq}')
             client.update_params(models.ComAtprotoSyncSubscribeRepos.Params(cursor=commit.seq))
             SubscriptionState.update(cursor=commit.seq).where(SubscriptionState.service == name).execute()
