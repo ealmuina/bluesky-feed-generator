@@ -15,7 +15,7 @@ app = Flask(__name__)
 stop_event = threading.Event()
 
 # Posts process
-for _ in range(10):
+for _ in range(20):
     PostProcessor().start()
 
 # Stream thread
