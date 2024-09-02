@@ -1,21 +1,21 @@
 import datetime
 import logging
 import os
-from threading import Thread
 
-from redis import Redis
 from atproto_client.client.client import Client
+from redis import Redis
 
+from server.celery_config import app
 from server.database import User
+from server.tasks.base import BaseCeleryTask
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
-QUEUE_NAME = "bsky-statistics"
 QUEUE_INDEX = "bsky-statistics-index"
 
 
-class StatisticsUpdater(Thread):
+class StatisticsUpdater(BaseCeleryTask):
     def __init__(self):
         super().__init__()
 
@@ -26,28 +26,26 @@ class StatisticsUpdater(Thread):
         )
         self.redis = Redis(host="redis")
 
-    def run(self, stop_event=None):
-        while stop_event is None or not stop_event.is_set():
-            _, user_did = self.redis.brpop(QUEUE_NAME)
-            user_did = user_did.decode()
-            self.redis.srem(QUEUE_INDEX, user_did)
+    def run(self, user_did):
+        self.redis.srem(QUEUE_INDEX, user_did)
 
-            try:
-                now = datetime.datetime.now()
-                user = User.get(did=user_did)
+        try:
+            now = datetime.datetime.now()
+            user = User.get(did=user_did)
 
-                if user.last_update is None or user.last_update < now - datetime.timedelta(days=1):
-                    profile = self.client.get_profile(user_did)
+            if user.last_update is None or user.last_update < now - datetime.timedelta(days=1):
+                profile = self.client.get_profile(user_did)
 
-                    user.handle = profile.handle
-                    user.followers_count = profile.followers_count
-                    user.follows_count = profile.follows_count
-                    user.posts_count = profile.posts_count
-                    user.last_update = now
+                user.handle = profile.handle
+                user.followers_count = profile.followers_count
+                user.follows_count = profile.follows_count
+                user.posts_count = profile.posts_count
+                user.last_update = now
 
-                    user.save()
+                user.save()
 
-            except Exception:
-                logger.exception(f"Error updating statistics for DID: {user_did}", exc_info=True)
+        except Exception as e:
+            logger.warning(f"Error updating statistics for DID '{user_did}': {e}")
 
-            logger.info(f"{self.redis.llen(QUEUE_NAME)} users pending for update")
+
+update_user_statistics = app.register_task(StatisticsUpdater())

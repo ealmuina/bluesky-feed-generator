@@ -10,6 +10,17 @@ services:
     depends_on:
       - db
       - redis
+  celery:
+    env_file:
+      - .env
+    build:
+      context: .
+    volumes:
+      - .:/app
+    depends_on:
+      - db
+      - redis
+    command: celery -A server.celery_config worker -l info
   db:
     image: postgres:latest
     environment:

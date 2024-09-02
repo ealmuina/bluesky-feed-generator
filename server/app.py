@@ -7,16 +7,12 @@ from flask import Flask, jsonify, request
 from server import config, data_stream
 from server.algos import algos
 from server.auth import AuthorizationError, validate_auth
-from server.data_filter import operations_callback, PostProcessor
-from server.tasks import cleaner, statistics
+from server.data_filter import operations_callback
+from server.tasks import cleaner
 
 app = Flask(__name__)
 
 stop_event = threading.Event()
-
-# Posts process
-for _ in range(20):
-    PostProcessor().start()
 
 # Stream thread
 threading.Thread(
@@ -28,11 +24,12 @@ threading.Thread(
     target=cleaner.run, args=(stop_event,)
 ).start()
 
+
 # Statistics update thread
-statistics_updater = statistics.StatisticsUpdater()
-threading.Thread(
-    target=statistics_updater.run, args=(stop_event,)
-).start()
+# statistics_updater = statistics.StatisticsUpdater()
+# threading.Thread(
+#     target=statistics_updater.run, args=(stop_event,)
+# ).start()
 
 
 def sigint_handler(*_):
