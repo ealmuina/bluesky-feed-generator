@@ -20,7 +20,7 @@ services:
     depends_on:
       - db
       - redis
-    command: celery -A server.celery_config worker -l info --autoscale=50,4
+    command: celery -A server.celery_config worker -l info --autoscale=100,4
   db:
     image: postgres:latest
     environment:
