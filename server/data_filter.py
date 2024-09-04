@@ -4,55 +4,19 @@ from itertools import cycle, chain
 
 from atproto import models
 from dateutil import parser
-from ftlangdetect.detect import get_or_load_model
 from redis import Redis
 
 from server.database import db, Post, Language, User, Interaction
 from server.tasks import statistics
-from server.utils import remove_emoji, remove_links
 
 redis = Redis(host="redis")
 
 
 def detect_language(text, user_languages):
     user_languages = map(str.lower, user_languages)
-    user_languages = [
+    return [
         language.split("-")[0] for language in user_languages
     ]
-
-    text = text.replace('\n', '. ').strip()
-    text = remove_emoji(text)
-    text = remove_links(text)
-
-    if not text:
-        return user_languages
-
-    model = get_or_load_model(low_memory=False)
-    labels, scores = model.predict(text, k=5)
-    language_prob = {
-        lang.replace("__label__", ''): score
-        for lang, score in zip(labels, scores)
-    }
-
-    # Confirm user tag
-    # if its confidence is higher than 0.15
-    text_languages = []
-    for language in user_languages:
-        prob = language_prob.get(language, 0)
-        if prob > 0.15:
-            text_languages.append(language)
-    if text_languages:
-        return text_languages
-
-    # Set model-detected language
-    # if its confidence is higher than 0.7
-    best_match = labels[0].replace("__label__", '')
-    best_score = scores[0]
-    if best_score > 0.7:
-        return best_match
-
-    # Language uncertain
-    return []
 
 
 def operations_callback(ops: defaultdict) -> None:
