@@ -2,7 +2,6 @@ import logging
 import pickle
 from collections import defaultdict
 from datetime import datetime
-from itertools import chain, cycle
 from multiprocessing import Process
 
 from atproto import models
@@ -10,7 +9,7 @@ from dateutil import parser
 from ftlangdetect.detect import get_or_load_model
 from redis import Redis
 
-from server.database import Language, Post, db, Interaction, User
+from server.database import Language, Post, db, User, PostLanguage
 from server.tasks import statistics
 from server.utils import remove_emoji, remove_links
 
@@ -18,12 +17,16 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
 QUEUE_NAME = "bsky-posts"
+POSTS_BATCH_SIZE = 100
 
 
 class PostProcessor(Process):
     def __init__(self):
         super().__init__()
+
         self.redis = Redis(host="redis")
+        self.posts_queue = []
+        self.interactions_queue = []
 
     @staticmethod
     def _detect_language(text, user_languages):
@@ -92,92 +95,62 @@ class PostProcessor(Process):
 
     def _process_posts(self, ops):
         created_posts = ops.get(models.ids.AppBskyFeedPost, {}).get("created", [])
+        self.posts_queue.extend(created_posts)
 
-        posts_to_create = []
-        for created_post in created_posts:
-            record = created_post['record']
+        if len(self.posts_queue) > POSTS_BATCH_SIZE:
+            posts_to_create = []
+            post_languages = []
 
-            reply_parent = None
-            if record.reply and record.reply.parent.uri:
-                reply_parent = record.reply.parent.uri
+            for created_post in self.posts_queue:
+                record = created_post['record']
 
-            reply_root = None
-            if record.reply and record.reply.root.uri:
-                reply_root = record.reply.root.uri
+                reply_parent = None
+                if record.reply and record.reply.parent.uri:
+                    reply_parent = record.reply.parent.uri
 
-            # Get or create author
-            author = self._get_or_create_author(created_post, update_statistics=True)
+                reply_root = None
+                if record.reply and record.reply.root.uri:
+                    reply_root = record.reply.root.uri
 
-            # Detect languages
-            languages = record.langs or []
-            languages = self._detect_language(record.text, languages)
-            languages = {
-                Language.get_or_create(code=lang)[0]
-                for lang in languages
-            }
+                # Get or create author
+                author = self._get_or_create_author(created_post, update_statistics=True)
 
-            post_dict = {
-                'author': author,
-                'uri': created_post['uri'],
-                'cid': created_post['cid'],
-                'reply_parent': reply_parent,
-                'reply_root': reply_root,
-                'languages': languages,
-                'created_at': parser.parse(record.created_at),
-            }
-            posts_to_create.append(post_dict)
+                post_dict = {
+                    "uri": created_post["uri"],
+                    "author": author,
+                    "cid": created_post["cid"],
+                    "reply_parent": reply_parent,
+                    "reply_root": reply_root,
+                    "created_at": parser.parse(record.created_at),
+                }
+                posts_to_create.append(post_dict)
+
+                # Detect languages
+                languages = record.langs or []
+                languages = self._detect_language(record.text, languages)
+                languages = {
+                    Language.get_or_create(code=lang)[0]
+                    for lang in languages
+                }
+                for language in languages:
+                    post_languages.append(
+                        {
+                            "post_id": created_post["uri"],
+                            "language_id": language.id,
+                        }
+                    )
+
+            with db.atomic():
+                Post.insert_many(posts_to_create).on_conflict_ignore().execute()
+                PostLanguage.insert_many(post_languages).on_conflict_ignore().execute()
+
+            self.posts_queue.clear()
 
         posts_to_delete = ops.get(models.ids.AppBskyFeedPost, {}).get("deleted", [])
         posts_to_delete = [p['uri'] for p in posts_to_delete]
 
         if posts_to_delete:
             Post.delete().where(Post.uri.in_(posts_to_delete))
-
-        if posts_to_create:
-            with db.atomic():
-                for post_dict in posts_to_create:
-                    languages = post_dict.pop("languages")
-                    post = Post.create(**post_dict)
-                    post.languages = list(languages)
-
-    def _process_interactions(self, ops):
-        created_likes = ops.get(models.ids.AppBskyFeedLike, {}).get("created", [])
-        created_reposts = ops.get(models.ids.AppBskyFeedRepost, {}).get("created", [])
-
-        interactions_to_create = []
-        for interaction_type, created_interaction in chain(
-                zip(cycle([Interaction.LIKE]), created_likes),
-                zip(cycle([Interaction.REPOST]), created_reposts)
-        ):
-            record = created_interaction['record']
-
-            # Get author and Post
-            author = self._get_or_create_author(created_interaction)
-            post = self._get_or_create_post(record.subject.uri, record.subject.cid)
-
-            interaction_dict = {
-                'author': author,
-                'post': post,
-                'uri': created_interaction['uri'],
-                'cid': created_interaction['cid'],
-                'interaction_type': interaction_type,
-                'created_at': parser.parse(record.created_at),
-            }
-            interactions_to_create.append(interaction_dict)
-
-        likes_to_delete = ops.get(models.ids.AppBskyFeedLike, {}).get("deleted", [])
-        reposts_to_delete = ops.get(models.ids.AppBskyFeedRepost, {}).get("deleted", [])
-        interactions_to_delete = [
-            p['uri']
-            for p in likes_to_delete + reposts_to_delete
-        ]
-        if interactions_to_delete:
-            Interaction.delete().where(Interaction.uri.in_(interactions_to_delete))
-
-        if interactions_to_create:
-            with db.atomic():
-                for interaction_dict in interactions_to_create:
-                    Interaction.create(**interaction_dict)
 
     def run(self, stop_event=None):
         # Create separate DB connection for the process
@@ -189,7 +162,6 @@ class PostProcessor(Process):
             ops = pickle.loads(ops)
             try:
                 self._process_posts(ops)
-                self._process_interactions(ops)
             except Exception as e:
                 logger.warning(e)
 

@@ -1,7 +1,7 @@
 import datetime
 import time
 
-from server.database import Post, Interaction, PostLanguage
+from server.database import Post, PostLanguage
 
 
 def run(stop_event=None):
@@ -12,7 +12,6 @@ def run(stop_event=None):
                 Post.select(Post.id).where(Post.indexed_at <= now - datetime.timedelta(days=7))
             )
         ).execute()
-        Interaction.delete().where(Interaction.indexed_at <= now - datetime.timedelta(days=7)).execute()
         Post.delete().where(Post.indexed_at <= now - datetime.timedelta(days=7)).execute()
 
         time.sleep(86400)  # 1 day

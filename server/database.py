@@ -17,7 +17,7 @@ class BaseModel(peewee.Model):
 
 
 class User(BaseModel):
-    did = peewee.CharField(unique=True)
+    did = peewee.CharField(index=True)
     handle = peewee.CharField(null=True)
     followers_count = peewee.IntegerField(null=True)
     follows_count = peewee.IntegerField(null=True)
@@ -28,13 +28,14 @@ class User(BaseModel):
 
 
 class Language(BaseModel):
-    code = peewee.CharField(unique=True)
+    code = peewee.CharField(index=True)
 
 
 class Post(BaseModel):
+    uri = peewee.CharField(primary_key=True)
+
     author = peewee.ForeignKeyField(User, related_name='posts', null=True)
 
-    uri = peewee.CharField(unique=True)
     cid = peewee.CharField(index=True)
     reply_parent = peewee.CharField(null=True, default=None, index=True)
     reply_root = peewee.CharField(null=True, default=None, index=True)
@@ -45,26 +46,6 @@ class Post(BaseModel):
 
 
 PostLanguage = Post.languages.get_through_model()
-
-
-class Interaction(BaseModel):
-    LIKE, REPOST = range(2)
-
-    uri = peewee.CharField(unique=True)
-    cid = peewee.CharField()
-
-    author = peewee.ForeignKeyField(User, related_name='likes', on_delete="CASCADE")
-    post = peewee.ForeignKeyField(Post, related_name='likes', on_delete="CASCADE")
-    interaction_type = peewee.IntegerField(
-        index=True,
-        choices=[
-            (LIKE, 'like'),
-            (REPOST, 'repost'),
-        ],
-    )
-
-    indexed_at = peewee.DateTimeField(default=datetime.utcnow)
-    created_at = peewee.DateTimeField(null=True, index=True)
 
 
 class SubscriptionState(BaseModel):
@@ -79,6 +60,5 @@ if db.is_closed():
         Language,
         Post,
         PostLanguage,
-        Interaction,
         SubscriptionState,
     ])
