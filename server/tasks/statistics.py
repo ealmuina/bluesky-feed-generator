@@ -1,12 +1,12 @@
 import datetime
 import logging
 import os
-from threading import Thread
+from multiprocessing import Process
 
-from redis import Redis
 from atproto_client.client.client import Client
+from redis import Redis
 
-from server.database import User
+from server.database import User, db
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -15,7 +15,7 @@ QUEUE_NAME = "bsky-statistics"
 QUEUE_INDEX = "bsky-statistics-index"
 
 
-class StatisticsUpdater(Thread):
+class StatisticsUpdater(Process):
     def __init__(self):
         super().__init__()
 
@@ -26,8 +26,12 @@ class StatisticsUpdater(Thread):
         )
         self.redis = Redis(host="redis")
 
-    def run(self, stop_event=None):
-        while stop_event is None or not stop_event.is_set():
+    def run(self):
+        # Create separate DB connection for the process
+        db.close()
+        db.connect()
+
+        while True:
             _, user_did = self.redis.brpop(QUEUE_NAME)
             user_did = user_did.decode()
             self.redis.srem(QUEUE_INDEX, user_did)
@@ -47,7 +51,7 @@ class StatisticsUpdater(Thread):
 
                     user.save()
 
-            except Exception:
-                logger.exception(f"Error updating statistics for DID: {user_did}", exc_info=True)
+            except Exception as e:
+                logger.warning(f"Error updating statistics for DID '{user_did}': {e}")
 
             logger.info(f"{self.redis.llen(QUEUE_NAME)} users pending for update")

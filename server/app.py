@@ -1,13 +1,14 @@
+import os
 import signal
 import sys
 import threading
 
 from flask import Flask, jsonify, request
 
-from server import config, data_stream
+from server import config, data_stream, data_filter
 from server.algos import algos
 from server.auth import AuthorizationError, validate_auth
-from server.data_filter import operations_callback, PostProcessor
+from server.data_filter import operations_callback
 from server.tasks import cleaner, statistics
 
 app = Flask(__name__)
@@ -15,24 +16,19 @@ app = Flask(__name__)
 stop_event = threading.Event()
 
 # Posts process
-for _ in range(5):
-    PostProcessor().start()
+for _ in range(os.cpu_count()):
+    data_filter.PostProcessor().start()
 
-# Stream thread
-threading.Thread(
-    target=data_stream.run, args=(config.SERVICE_DID, operations_callback, stop_event,)
-).start()
+# Stream process
+data_stream.DataStreamHandler(config.SERVICE_DID, operations_callback).start()
 
 # Cleaner thread
 threading.Thread(
     target=cleaner.run, args=(stop_event,)
 ).start()
 
-# Statistics update thread
-statistics_updater = statistics.StatisticsUpdater()
-threading.Thread(
-    target=statistics_updater.run, args=(stop_event,)
-).start()
+# Statistics update process
+statistics.StatisticsUpdater().start()
 
 
 def sigint_handler(*_):

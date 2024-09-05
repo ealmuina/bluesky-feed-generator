@@ -152,12 +152,12 @@ class PostProcessor(Process):
         if posts_to_delete:
             Post.delete().where(Post.uri.in_(posts_to_delete))
 
-    def run(self, stop_event=None):
+    def run(self):
         # Create separate DB connection for the process
         db.close()
         db.connect()
 
-        while stop_event is None or not stop_event.is_set():
+        while True:
             _, ops = self.redis.brpop(QUEUE_NAME)
             ops = pickle.loads(ops)
             try:
