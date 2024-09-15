@@ -1,3 +1,8 @@
+> [!WARNING]
+> Archived as after reaching ~10 million users in Bluesky, this code couldn't keep up with the pace of events from the firehose, and any effort I made to parallelize was uneffective.
+>
+> I have moved on to [a new implementation in Go](https://github.com/ealmuina/bsky-feed).
+
 ## ATProto Feed Generator powered by [The AT Protocol SDK for Python](https://github.com/MarshalX/atproto)
 
 > Feed Generators are services that provide custom algorithms to users through the AT Protocol.
